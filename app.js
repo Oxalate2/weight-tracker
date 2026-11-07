@@ -202,6 +202,55 @@ $("ranges").addEventListener("click", (event) => {
   render();
 });
 
+// ---------- Backup ----------
+function setBackupMsg(text, ok = false) {
+  const el = $("backup-msg");
+  el.textContent = text || "";
+  el.hidden = !text;
+  el.classList.toggle("ok", ok);
+}
+
+async function renderBackupStatus() {
+  const meta = await db.getMeta("lastBackup");
+  const el = $("backup-status");
+  if (!meta) {
+    el.textContent = state.entries.length ? "No backup yet. Export one to keep your data safe." : "No backup yet.";
+    return;
+  }
+  const localDay = new Date(meta.value).toLocaleDateString("en-CA");
+  const age = dayNumber(todayISO()) - dayNumber(localDay);
+  el.textContent = `Last backup: ${formatDate(localDay)}` + (age > 30 ? ". It's been a while. Export a new one." : "");
+}
+
+$("export-btn").addEventListener("click", async () => {
+  try {
+    if (await exportBackup()) setBackupMsg("Backup exported.", true);
+  } catch (err) {
+    setBackupMsg("Couldn't export: " + err.message);
+  }
+  renderBackupStatus();
+});
+
+$("import-btn").addEventListener("click", () => $("import-file").click());
+
+$("import-file").addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const result = await importBackup(file);
+    if (result) {
+      state.entries = await db.getEntries();
+      state.goals = (await db.getGoals()) || null;
+      render();
+      setBackupMsg(`Imported ${result.count} entries (${result.replaced} replaced).`, true);
+    }
+  } catch (err) {
+    setBackupMsg(err.message);
+  } finally {
+    event.target.value = ""; // lets you pick the same file again
+  }
+});
+
 // ---------- Startup ----------
 // Start on the shortest range that has at least 2 entries, so the chart isn't empty on first view.
 function pickDefaultRange(entries) {
@@ -220,6 +269,7 @@ async function init() {
   state.range = pickDefaultRange(entries);
   resetForm();
   render();
+  renderBackupStatus();
   if (!goals) openGoals(); // first run: ask for start and goal weight
 }
 
@@ -229,3 +279,6 @@ init().catch((err) => {
     ? "Couldn't open local storage. Try a normal (non-private) browser window."
     : "Something went wrong while starting: " + err.message);
 });
+
+// Offline support (only works when served from localhost or https, not from a file)
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -128,3 +128,8 @@ dialog h2 { font-size: 1.1rem; margin-bottom: 14px; }
 /* ---------- Phase 3: chart ---------- */
 [hidden] { display: none !important; }
 .chart-wrap { position: relative; height: 260px; }
+
+/* ---------- Phase 4: backup ---------- */
+#backup-status { margin-bottom: 12px; }
+#backup-msg { margin: 10px 0 0; }
+.error.ok { color: var(--good); }

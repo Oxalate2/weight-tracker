@@ -32,4 +32,16 @@ const db = {
   deleteEntry: (date) => run("entries", "readwrite", (s) => s.delete(date)),
   getGoals: () => run("settings", "readonly", (s) => s.get("goals")),
   saveGoals: (g) => run("settings", "readwrite", (s) => s.put({ key: "goals", ...g })),
+  getMeta: (key) => run("settings", "readonly", (s) => s.get(key)),
+  saveMeta: (key, value) => run("settings", "readwrite", (s) => s.put({ key, value })),
+  // Save many entries in one transaction: all succeed or none do
+  saveEntries: async (list) => {
+    const database = await dbReady;
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction("entries", "readwrite");
+      list.forEach((entry) => transaction.objectStore("entries").put(entry));
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  },
 };

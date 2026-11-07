@@ -6,6 +6,12 @@
   <meta name="theme-color" content="#10151f">
   <title>Weight Tracker</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Weight">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
   <header class="topbar">
@@ -69,6 +75,17 @@
       <ul class="entries" id="entries"></ul>
       <p class="empty" id="entries-empty">No entries yet. Log your first weigh-in above.</p>
     </section>
+
+    <section class="card" aria-labelledby="data-title">
+      <div class="card-head"><h2 id="data-title">Backup</h2></div>
+      <p class="empty" id="backup-status">No backup yet.</p>
+      <div class="actions">
+        <button class="btn primary" type="button" id="export-btn">Export backup</button>
+        <button class="btn" type="button" id="import-btn">Import backup</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </div>
+      <p class="error" id="backup-msg" role="status" hidden></p>
+    </section>
   </main>
 
   <dialog id="goals-dialog">
@@ -87,6 +104,7 @@
   <script src="vendor/chart.umd.js"></script>
   <script src="db.js"></script>
   <script src="analytics.js"></script>
+  <script src="backup.js"></script>
   <script src="chart-view.js"></script>
   <script src="app.js"></script>
 </body>
