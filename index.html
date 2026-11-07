@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10151f">
+  <title>Weight Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Weight</h1>
+    <button class="link" id="goals-btn" type="button">Goals</button>
+  </header>
+
+  <main class="dashboard">
+    <section class="card hero" aria-labelledby="hero-label">
+      <p class="label" id="hero-label">Current weight</p>
+      <p class="hero-value"><span data-bind="current">--</span><span class="unit">lb</span></p>
+      <p class="hero-sub" data-bind="weekDelta">No weigh-ins yet</p>
+      <div class="progress" role="progressbar" aria-label="Progress to goal"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-meta">
+        <span>Start <b data-bind="start">--</b></span>
+        <span data-bind="percent">0% to goal</span>
+        <span>Goal <b data-bind="goal">--</b></span>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Overview">
+      <div class="card stat"><p class="label">Total change</p><p class="stat-value" data-bind="change">--</p></div>
+      <div class="card stat"><p class="label">Left to goal</p><p class="stat-value" data-bind="remaining">--</p></div>
+      <div class="card stat"><p class="label">Last weigh-in</p><p class="stat-value" data-bind="lastDate">--</p></div>
+      <div class="card stat"><p class="label">Weekly change</p><p class="stat-value" data-bind="weekChange">--</p></div>
+      <div class="card stat"><p class="label">Monthly change</p><p class="stat-value" data-bind="monthChange">--</p></div>
+      <div class="card stat"><p class="label">Trend (4 weeks)</p><p class="stat-value" data-bind="trend">--</p></div>
+    </section>
+
+    <!-- Phase 2: log / edit form -->
+    <section class="card" aria-labelledby="form-title">
+      <div class="card-head"><h2 id="form-title">Log weight</h2></div>
+      <form id="entry-form" novalidate>
+        <div class="fields">
+          <label>Date <input type="date" id="f-date" required></label>
+          <label>Weight (lb) <input type="number" id="f-weight" inputmode="decimal" step="0.1" required></label>
+        </div>
+        <label>Notes (optional) <input type="text" id="f-notes" maxlength="200"></label>
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <div class="actions">
+          <button class="btn primary" type="submit" id="f-submit">Save entry</button>
+          <button class="btn" type="button" id="f-cancel" hidden>Cancel edit</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card chart-card" aria-labelledby="chart-title">
+      <div class="card-head">
+        <h2 id="chart-title">History</h2>
+        <div class="ranges" role="group" aria-label="Time range" id="ranges"><button class="chip" type="button" data-range="7D">7D</button><button class="chip" type="button" data-range="30D">30D</button><button class="chip" type="button" data-range="90D">90D</button><button class="chip" type="button" data-range="6M">6M</button><button class="chip" type="button" data-range="1Y">1Y</button><button class="chip" type="button" data-range="All">All</button></div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-canvas" aria-label="Weight history chart" role="img"></canvas></div>
+      <div class="chart-empty" id="chart-empty" hidden>No entries in this range</div>
+    </section>
+
+    <section class="card" aria-labelledby="recent-title">
+      <div class="card-head"><h2 id="recent-title">Recent entries</h2></div>
+      <ul class="entries" id="entries"></ul>
+      <p class="empty" id="entries-empty">No entries yet. Log your first weigh-in above.</p>
+    </section>
+  </main>
+
+  <dialog id="goals-dialog">
+    <form id="goals-form" novalidate>
+      <h2>Your goal</h2>
+      <label>Starting weight (lb) <input type="number" id="g-start" inputmode="decimal" step="0.1" required></label>
+      <label>Goal weight (lb) <input type="number" id="g-goal" inputmode="decimal" step="0.1" required></label>
+      <p class="error" id="goals-error" role="alert" hidden></p>
+      <div class="actions">
+        <button class="btn primary" type="submit">Save goal</button>
+        <button class="btn" type="button" id="g-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="vendor/chart.umd.js"></script>
+  <script src="db.js"></script>
+  <script src="analytics.js"></script>
+  <script src="chart-view.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
