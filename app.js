@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 // ---------- Helpers ----------
 const round1 = (n) => Math.round(n * 10) / 10;
 const todayISO = () => new Date().toLocaleDateString("en-CA"); // local date as YYYY-MM-DD
+const plural = (n, word) => `${n} ${n === 1 ? word : word + "s"}`; // plural(1, "meal") -> "1 meal"
 const signed = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(round1(n)).toFixed(1) + " lb";
 
 function formatDate(iso) {
@@ -243,7 +244,7 @@ $("import-file").addEventListener("change", async (event) => {
       state.goals = (await db.getGoals()) || null;
       render();
       await loadMealDay(nutrition.day);
-      setBackupMsg(`Imported ${result.count} weigh-ins and ${result.mealCount} meals (${result.replaced} replaced).`, true);
+      setBackupMsg(`Imported ${plural(result.count, "weigh-in")} and ${plural(result.mealCount, "meal")} (${result.replaced} replaced).`, true);
     }
   } catch (err) {
     setBackupMsg(err.message);

@@ -87,8 +87,9 @@ async function importBackup(file) {
   const existingMeals = new Set((await db.getAllMeals()).map((m) => m.id));
   const replaced = entries.filter((e) => existingDates.has(e.date)).length +
     meals.filter((m) => existingMeals.has(m.id)).length;
-  const message = `Import ${entries.length} weigh-ins and ${meals.length} meals?` +
-    (replaced ? ` ${replaced} already exist here and will be replaced by the backup's version.` : "");
+  // plural() lives in app.js; it exists by the time anyone clicks Import.
+  const message = `Import ${plural(entries.length, "weigh-in")} and ${plural(meals.length, "meal")}?` +
+    (replaced ? ` ${replaced} already ${replaced === 1 ? "exists" : "exist"} here and will be replaced by the backup's version.` : "");
   if (!confirm(message)) return null;
   await db.saveEntries(entries);
   await db.saveMeals(meals);
