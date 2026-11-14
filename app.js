@@ -266,8 +266,7 @@ function pickDefaultRange(entries) {
 }
 
 async function init() {
-  setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
-  setupTrends(); // and the Nutrition trends card's (see trends-view.js)
+  // Weights first, so a problem in the nutrition cards can never hide your weigh-ins.
   const [entries, goals] = await Promise.all([db.getEntries(), db.getGoals()]);
   state.entries = entries;
   state.goals = goals || null;
@@ -275,9 +274,18 @@ async function init() {
   resetForm();
   render();
   renderBackupStatus();
-  await loadMealDay(todayISO());
-  await loadTrends();
   if (!goals) openGoals(); // first run: ask for start and goal weight
+
+  try {
+    setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
+    setupTrends(); // and the Nutrition trends card's (see trends-view.js)
+    await loadMealDay(todayISO());
+    await loadTrends();
+  } catch (err) {
+    console.error(err);
+    $("meals-empty").textContent = "Nutrition couldn't load: " + err.message + ". Close and reopen the app to finish updating.";
+    $("meals-empty").hidden = false;
+  }
 }
 
 init().catch((err) => {

@@ -1,6 +1,6 @@
 // Service worker: saves the app's files on first visit, then serves them without internet.
 // To ship an update, change CACHE (e.g. v2) so devices fetch the new files.
-const CACHE = "weight-tracker-v5";
+const CACHE = "weight-tracker-v6";
 const FILES = [
   "./", "index.html", "styles.css", "app.js", "db.js", "analytics.js", "nutrition.js", "backup.js",
   "chart-view.js", "nutrition-view.js", "trends-view.js", "vendor/chart.umd.js", "manifest.webmanifest",
@@ -8,7 +8,11 @@ const FILES = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: "reload" skips the browser's normal HTTP cache and asks the server directly.
+  // Without it, GitHub Pages' 10-minute caching can hand us an old index.html next to a
+  // new app.js, and a mix of versions breaks startup ("can't find variable: setupTrends").
+  const fresh = FILES.map((f) => new Request(f, { cache: "reload" }));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(fresh)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
