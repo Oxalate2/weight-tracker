@@ -39,7 +39,8 @@ function renderChart(entries, rangeKey) {
   }
   const today = dayNumber(new Date().toLocaleDateString("en-CA"));
   const days = RANGE_DAYS[rangeKey];
-  const start = days === null ? (entries.length ? dayNumber(entries[0].date) : today) : today - days;
+  // "7D" = today plus the 6 days before it (7 days, not 8), the same as the trends card.
+  const start = days === null ? (entries.length ? dayNumber(entries[0].date) : today) : today - (days - 1);
 
   const visible = entries.filter((e) => dayNumber(e.date) >= start);
   if (weightChart) { weightChart.destroy(); weightChart = null; }
@@ -57,6 +58,11 @@ function renderChart(entries, rangeKey) {
   const avg = rollingAverage(entries).filter((p) => p.day >= start).map((p) => ({ x: p.day * DAY_MS, y: p.avg }));
   const muted = cssVar("--muted");
   const accent = cssVar("--accent"); // must be #rrggbb: hex alpha suffixes are appended below
+  // A little empty space before the first day and after today (3% of the range, at least
+  // half a day), so dots on the edge days aren't cut in half by the plot's border.
+  const startMs = start * DAY_MS;
+  const endMs = Math.max(today, start + 1) * DAY_MS;
+  const edgePad = Math.max((endMs - startMs) * 0.03, DAY_MS / 2);
 
   weightChart = new Chart(canvas, {
     type: "line",
@@ -89,9 +95,10 @@ function renderChart(entries, rangeKey) {
       scales: {
         x: {
           type: "linear",
-          min: start * DAY_MS,
-          max: Math.max(today, start + 1) * DAY_MS,
-          afterBuildTicks: (scale) => { scale.ticks = evenDateTicks(scale.min, scale.max); },
+          min: startMs - edgePad,
+          max: endMs + edgePad,
+          // Labels still come from the real date range, not the padded one.
+          afterBuildTicks: (scale) => { scale.ticks = evenDateTicks(startMs, endMs); },
           ticks: { color: muted, maxRotation: 0, padding: 8, font: { size: 11 }, callback: (v) => axisDate(v) },
           grid: { display: false },
           border: { display: false },

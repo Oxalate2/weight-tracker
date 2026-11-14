@@ -1,6 +1,6 @@
 // Service worker: saves the app's files on first visit, then serves them without internet.
 // To ship an update, change CACHE (e.g. v2) so devices fetch the new files.
-const CACHE = "weight-tracker-v6";
+const CACHE = "weight-tracker-v7";
 const FILES = [
   "./", "index.html", "styles.css", "app.js", "db.js", "analytics.js", "nutrition.js", "backup.js",
   "chart-view.js", "nutrition-view.js", "trends-view.js", "vendor/chart.umd.js", "manifest.webmanifest",

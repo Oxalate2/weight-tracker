@@ -259,7 +259,7 @@ $("import-file").addEventListener("change", async (event) => {
 function pickDefaultRange(entries) {
   const today = dayNumber(todayISO());
   for (const key of ["30D", "90D", "6M", "1Y"]) {
-    const start = today - RANGE_DAYS[key];
+    const start = today - (RANGE_DAYS[key] - 1); // same range the chart shows
     if (entries.filter((e) => dayNumber(e.date) >= start).length >= 2) return key;
   }
   return "All";
