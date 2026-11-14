@@ -61,6 +61,24 @@
       </form>
     </section>
 
+    <!-- Phase 5: nutrition for one day at a time -->
+    <section class="card" aria-labelledby="nutrition-title">
+      <div class="card-head">
+        <h2 id="nutrition-title">Nutrition</h2>
+        <div class="day-nav">
+          <button class="chip" type="button" id="n-prev" aria-label="Previous day">‹</button>
+          <span id="n-day" aria-live="polite">Today</span>
+          <button class="chip" type="button" id="n-next" aria-label="Next day">›</button>
+        </div>
+      </div>
+      <div class="totals" id="n-totals"></div>
+      <ul class="entries" id="meals"></ul>
+      <p class="empty" id="meals-empty">No meals logged for this day.</p>
+      <div class="actions">
+        <button class="btn primary" type="button" id="add-meal-btn">Add meal</button>
+      </div>
+    </section>
+
     <section class="card chart-card" aria-labelledby="chart-title">
       <div class="card-head">
         <h2 id="chart-title">History</h2>
@@ -101,11 +119,35 @@
     </form>
   </dialog>
 
+  <dialog id="meal-dialog">
+    <form id="meal-form" novalidate>
+      <h2 id="meal-title">Add meal</h2>
+      <label>Description <input type="text" id="m-description" maxlength="100" autofocus required></label>
+      <label>Date <input type="date" id="m-date" required></label>
+      <div class="fields">
+        <label>Calories (kcal) <input type="number" id="m-calories" inputmode="numeric" min="0" required></label>
+        <label>Protein (g) <input type="number" id="m-protein" inputmode="decimal" min="0" step="0.1"></label>
+        <label>Carbs (g) <input type="number" id="m-carbs" inputmode="decimal" min="0" step="0.1"></label>
+        <label>Fat (g) <input type="number" id="m-fat" inputmode="decimal" min="0" step="0.1"></label>
+        <label>Fiber (g) <input type="number" id="m-fiber" inputmode="decimal" min="0" step="0.1"></label>
+        <label>Sodium (mg) <input type="number" id="m-sodium" inputmode="numeric" min="0"></label>
+      </div>
+      <label>Notes (optional) <input type="text" id="m-notes" maxlength="200"></label>
+      <p class="error" id="meal-error" role="alert" hidden></p>
+      <div class="actions">
+        <button class="btn primary" type="submit" id="m-submit">Save meal</button>
+        <button class="btn" type="button" id="m-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="vendor/chart.umd.js"></script>
   <script src="db.js"></script>
   <script src="analytics.js"></script>
+  <script src="nutrition.js"></script>
   <script src="backup.js"></script>
   <script src="chart-view.js"></script>
+  <script src="nutrition-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

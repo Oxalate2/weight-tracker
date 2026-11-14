@@ -39,7 +39,7 @@ function render() {
   const entries = [...state.entries].sort((a, b) => a.date.localeCompare(b.date));
   const goals = state.goals;
 
-  document.querySelectorAll(".chip").forEach((c) => c.classList.toggle("is-active", c.dataset.range === state.range));
+  document.querySelectorAll("#ranges .chip").forEach((c) => c.classList.toggle("is-active", c.dataset.range === state.range));
   if (goals) {
     setText("start", goals.startWeight.toFixed(1));
     setText("goal", goals.goalWeight.toFixed(1));
@@ -242,7 +242,8 @@ $("import-file").addEventListener("change", async (event) => {
       state.entries = await db.getEntries();
       state.goals = (await db.getGoals()) || null;
       render();
-      setBackupMsg(`Imported ${result.count} entries (${result.replaced} replaced).`, true);
+      await loadMealDay(nutrition.day);
+      setBackupMsg(`Imported ${result.count} weigh-ins and ${result.mealCount} meals (${result.replaced} replaced).`, true);
     }
   } catch (err) {
     setBackupMsg(err.message);
@@ -263,6 +264,7 @@ function pickDefaultRange(entries) {
 }
 
 async function init() {
+  setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
   const [entries, goals] = await Promise.all([db.getEntries(), db.getGoals()]);
   state.entries = entries;
   state.goals = goals || null;
@@ -270,6 +272,7 @@ async function init() {
   resetForm();
   render();
   renderBackupStatus();
+  await loadMealDay(todayISO());
   if (!goals) openGoals(); // first run: ask for start and goal weight
 }
 

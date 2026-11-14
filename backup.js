@@ -1,16 +1,19 @@
 // Export and import of your data as a JSON file. No page code here except file handling.
 
-const BACKUP_VERSION = 1;
+// Version 1: entries + goals. Version 2 adds meals. Version 1 files still import fine.
+const BACKUP_VERSION = 2;
 
 async function exportBackup() {
-  const [entries, goals] = await Promise.all([db.getEntries(), db.getGoals()]);
+  const [entries, goals, meals] = await Promise.all([db.getEntries(), db.getGoals(), db.getAllMeals()]);
   entries.sort((a, b) => a.date.localeCompare(b.date));
+  meals.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
   const backup = {
     app: "weight-tracker",
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     goals: goals ? { startWeight: goals.startWeight, goalWeight: goals.goalWeight } : null,
     entries,
+    meals,
   };
   const name = `weight-backup-${todayISO()}.json`;
   const file = new File([JSON.stringify(backup, null, 2)], name, { type: "application/json" });
@@ -48,6 +51,9 @@ function parseBackup(text) {
   if (!data || data.app !== "weight-tracker" || !Array.isArray(data.entries)) {
     throw new Error("That doesn't look like a Weight Tracker backup.");
   }
+  if (typeof data.version === "number" && data.version > BACKUP_VERSION) {
+    throw new Error("This backup was made by a newer version of the app. Update the app, then try again.");
+  }
   const entries = data.entries.map((e, i) => {
     const validDate = typeof e?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date) &&
       !Number.isNaN(Date.parse(e.date));
@@ -62,18 +68,30 @@ function parseBackup(text) {
   if (g && Number.isFinite(g.startWeight) && Number.isFinite(g.goalWeight)) {
     goals = { startWeight: g.startWeight, goalWeight: g.goalWeight };
   }
-  return { entries, goals };
+  // Version 1 backups have no meals at all; that's fine, there's just nothing to add.
+  const rawMeals = data.meals ?? [];
+  if (!Array.isArray(rawMeals)) throw new Error("The meals in that backup are unreadable.");
+  const meals = rawMeals.map((m, i) => {
+    const { meal, error } = validateMeal(m); // same rules as the meal form (no future-date check)
+    if (error) throw new Error(`Meal ${i + 1}: ${error}`);
+    return meal;
+  });
+  return { entries, goals, meals };
 }
 
-// Merge a backup into the current data. Same-date entries are replaced by the backup's version.
+// Merge a backup into the current data. Weigh-ins are matched by date, meals by id;
+// a match is replaced by the backup's version, everything else is added.
 async function importBackup(file) {
-  const { entries, goals } = parseBackup(await file.text());
-  const existing = new Set((await db.getEntries()).map((e) => e.date));
-  const replaced = entries.filter((e) => existing.has(e.date)).length;
-  const message = `Import ${entries.length} entries?` +
-    (replaced ? ` ${replaced} share a date with existing entries and will be replaced.` : "");
+  const { entries, goals, meals } = parseBackup(await file.text());
+  const existingDates = new Set((await db.getEntries()).map((e) => e.date));
+  const existingMeals = new Set((await db.getAllMeals()).map((m) => m.id));
+  const replaced = entries.filter((e) => existingDates.has(e.date)).length +
+    meals.filter((m) => existingMeals.has(m.id)).length;
+  const message = `Import ${entries.length} weigh-ins and ${meals.length} meals?` +
+    (replaced ? ` ${replaced} already exist here and will be replaced by the backup's version.` : "");
   if (!confirm(message)) return null;
   await db.saveEntries(entries);
+  await db.saveMeals(meals);
   if (goals && !(await db.getGoals())) await db.saveGoals(goals); // keep your current goals if you have them
-  return { count: entries.length, replaced };
+  return { count: entries.length, mealCount: meals.length, replaced };
 }

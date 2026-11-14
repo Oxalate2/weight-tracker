@@ -133,3 +133,23 @@ dialog h2 { font-size: 1.1rem; margin-bottom: 14px; }
 #backup-status { margin-bottom: 12px; }
 #backup-msg { margin: 10px 0 0; }
 .error.ok { color: var(--good); }
+
+/* ---------- Phase 5: nutrition ---------- */
+.day-nav { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+.day-nav span { min-width: 7.5em; text-align: center; font-variant-numeric: tabular-nums; }
+.day-nav .chip { cursor: pointer; font-size: 1rem; min-width: 36px; }
+.day-nav .chip:disabled { opacity: 0.35; cursor: default; }
+
+.totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+@media (min-width: 720px) { .totals { grid-template-columns: repeat(6, 1fr); } }
+.total { background: var(--bg); border-radius: 12px; padding: 8px 10px; }
+.total-value { font-size: 1.05rem; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.total-value small { font-size: 0.75rem; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.partial { display: block; font-size: 0.7rem; color: var(--warn); }
+
+#meals { margin-bottom: 8px; }
+.entry-main .meal-name { display: block; overflow-wrap: anywhere; }
+.entry-value { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The meal form is tall: let the dialog scroll on short phone screens */
+dialog { max-height: 90dvh; overflow-y: auto; }

@@ -11,6 +11,20 @@ function dayNumber(iso) {
   return Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
 }
 
+// True only for a real calendar date in YYYY-MM-DD form ("2026-02-30" is rejected).
+function isValidISODate(iso) {
+  if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+// Move a YYYY-MM-DD date by whole days: shiftDay("2026-03-01", -1) -> "2026-02-28".
+function shiftDay(iso, delta) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10);
+}
+
 // For each entry, the average of all entries in the 7 days ending on that entry's date.
 function rollingAverage(entries, windowDays = 7) {
   return entries.map((e) => {
