@@ -244,6 +244,7 @@ $("import-file").addEventListener("change", async (event) => {
       state.goals = (await db.getGoals()) || null;
       render();
       await loadMealDay(nutrition.day);
+      await loadTrends();
       setBackupMsg(`Imported ${plural(result.count, "weigh-in")} and ${plural(result.mealCount, "meal")} (${result.replaced} replaced).`, true);
     }
   } catch (err) {
@@ -266,6 +267,7 @@ function pickDefaultRange(entries) {
 
 async function init() {
   setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
+  setupTrends(); // and the Nutrition trends card's (see trends-view.js)
   const [entries, goals] = await Promise.all([db.getEntries(), db.getGoals()]);
   state.entries = entries;
   state.goals = goals || null;
@@ -274,6 +276,7 @@ async function init() {
   render();
   renderBackupStatus();
   await loadMealDay(todayISO());
+  await loadTrends();
   if (!goals) openGoals(); // first run: ask for start and goal weight
 }
 

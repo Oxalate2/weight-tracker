@@ -75,6 +75,10 @@ const db = {
   saveMeta: (key, value) => run("settings", "readwrite", (s) => s.put({ key, value })),
   getAllMeals: () => run("meals", "readonly", (s) => s.getAll()),
   getMealsByDate: (date) => run("meals", "readonly", (s) => s.index("date").getAll(date)),
+  // All meals from `from` to `to`, both included. Date strings sort like the dates they name,
+  // so the index can jump straight to the range instead of reading every meal.
+  getMealsBetween: (from, to) =>
+    run("meals", "readonly", (s) => s.index("date").getAll(IDBKeyRange.bound(from, to))),
   saveMeal: (meal) => run("meals", "readwrite", (s) => s.put(meal)), // add or replace by id
   deleteMeal: (id) => run("meals", "readwrite", (s) => s.delete(id)),
   saveMeals: (list) => putMany("meals", list),

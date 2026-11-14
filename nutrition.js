@@ -78,3 +78,38 @@ function dailyTotals(meals) {
   }
   return totals;
 }
+
+// ---------- Trends ----------
+// One point per calendar day from startISO to endISO (both included) for one nutrient:
+//   { date, logged, value, partial }
+//   logged:  any meal at all that day. A day with no meals is "not logged", never 0 kcal.
+//   value:   the day's total, or null if not logged / no meal recorded this nutrient.
+//   partial: some meals that day left this nutrient blank, so the real total is higher.
+function dailySeries(meals, startISO, endISO, key) {
+  const byDate = new Map();
+  for (const meal of meals) {
+    if (!byDate.has(meal.date)) byDate.set(meal.date, []);
+    byDate.get(meal.date).push(meal);
+  }
+  const series = [];
+  for (let date = startISO; date <= endISO; date = shiftDay(date, 1)) {
+    const dayMeals = byDate.get(date) ?? [];
+    const { total, missing } = dailyTotals(dayMeals)[key];
+    const recorded = dayMeals.length - missing;
+    series.push({
+      date,
+      logged: dayMeals.length > 0,
+      value: recorded > 0 ? total : null,
+      partial: recorded > 0 && missing > 0,
+    });
+  }
+  return series;
+}
+
+// Average per day, counting only complete days: logged, fully recorded, and not `today`
+// (today isn't over yet). Returns { average, days }; average is null when days is 0.
+function averageOf(series, today) {
+  const complete = series.filter((p) => p.value !== null && !p.partial && p.date !== today);
+  if (complete.length === 0) return { average: null, days: 0 };
+  return { average: complete.reduce((sum, p) => sum + p.value, 0) / complete.length, days: complete.length };
+}

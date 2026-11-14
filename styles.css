@@ -153,3 +153,17 @@ dialog h2 { font-size: 1.1rem; margin-bottom: 14px; }
 
 /* The meal form is tall: let the dialog scroll on short phone screens */
 dialog { max-height: 90dvh; overflow-y: auto; }
+
+/* ---------- Phase 5: nutrition trends ---------- */
+.trend-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+select {
+  font: inherit; font-size: 1rem; /* 16px+ stops iOS zooming on focus */
+  color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; min-height: 36px;
+}
+select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chart-wrap.trend-wrap, .chart-empty.trend-wrap { height: 200px; }
+.trend-note { color: var(--muted); font-size: 0.75rem; margin-top: 8px; }
+.trend-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+@media (min-width: 720px) { .trend-stats { grid-template-columns: repeat(5, 1fr); } }
+.trend-stats .sub { display: block; font-size: 0.7rem; color: var(--muted); }

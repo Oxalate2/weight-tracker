@@ -79,6 +79,19 @@
       </div>
     </section>
 
+    <!-- Phase 5: nutrition trends over a range of days -->
+    <section class="card" aria-labelledby="trends-title">
+      <div class="card-head"><h2 id="trends-title">Nutrition trends</h2></div>
+      <div class="trend-toolbar">
+        <select id="t-nutrient" aria-label="Nutrient to chart"></select>
+        <div class="ranges" role="group" aria-label="Trend range" id="t-ranges"><button class="chip" type="button" data-range="7D">7D</button><button class="chip" type="button" data-range="30D">30D</button><button class="chip" type="button" data-range="90D">90D</button></div>
+      </div>
+      <div class="chart-wrap trend-wrap"><canvas id="trend-canvas" aria-label="Daily nutrition chart" role="img"></canvas></div>
+      <div class="chart-empty trend-wrap" id="trend-empty" hidden></div>
+      <p class="trend-note" id="trend-note" hidden></p>
+      <div class="trend-stats" id="t-stats"></div>
+    </section>
+
     <section class="card chart-card" aria-labelledby="chart-title">
       <div class="card-head">
         <h2 id="chart-title">History</h2>
@@ -148,6 +161,7 @@
   <script src="backup.js"></script>
   <script src="chart-view.js"></script>
   <script src="nutrition-view.js"></script>
+  <script src="trends-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
