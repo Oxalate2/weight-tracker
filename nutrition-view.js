@@ -142,6 +142,7 @@ function setupNutrition() {
     $("meal-dialog").close();
     await loadMealDay(meal.date); // jump to the meal's day, in case you changed the date
     await loadTrends();
+    await refreshInsights();
   });
 
   // One listener for every Edit/Delete button in the list (event delegation).
@@ -154,5 +155,6 @@ function setupNutrition() {
     await db.deleteMeal(meal.id);
     await loadMealDay(nutrition.day);
     await loadTrends();
+    await refreshInsights();
   });
 }

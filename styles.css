@@ -167,3 +167,12 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .trend-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
 @media (min-width: 720px) { .trend-stats { grid-template-columns: repeat(5, 1fr); } }
 .trend-stats .sub { display: block; font-size: 0.7rem; color: var(--muted); }
+
+/* ---------- Phase 5: weight vs. nutrition ---------- */
+.insight-value { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.insight-detail { color: var(--muted); font-size: 0.9rem; margin: 4px 0 14px; }
+.weeks { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.weeks th { text-align: left; font-weight: 500; font-size: 0.8rem; color: var(--muted); padding: 0 0 6px; }
+.weeks td { padding: 8px 0; border-top: 1px solid var(--border); }
+.weeks .num { text-align: right; white-space: nowrap; }
+.weeks small { color: var(--muted); font-size: 0.75rem; }

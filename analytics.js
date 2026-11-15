@@ -62,10 +62,17 @@ function trendPerWeek(entries, today) {
   if (recent.length < 3) return null;
   const xs = recent.map((e) => dayNumber(e.date));
   if (Math.max(...xs) - Math.min(...xs) < 7) return null;
+  return weightSlopePerDay(recent) * 7;
+}
+
+// Least-squares straight line through the weigh-ins: pounds per day (negative = losing).
+// Uses every point, so one salty-dinner spike barely moves it.
+function weightSlopePerDay(entries) {
+  const xs = entries.map((e) => dayNumber(e.date));
   const n = xs.length;
   const meanX = xs.reduce((a, b) => a + b, 0) / n;
-  const meanY = recent.reduce((a, e) => a + e.weight, 0) / n;
+  const meanY = entries.reduce((a, e) => a + e.weight, 0) / n;
   let num = 0, den = 0;
-  recent.forEach((e, i) => { num += (xs[i] - meanX) * (e.weight - meanY); den += (xs[i] - meanX) ** 2; });
-  return (num / den) * 7;
+  entries.forEach((e, i) => { num += (xs[i] - meanX) * (e.weight - meanY); den += (xs[i] - meanX) ** 2; });
+  return num / den;
 }

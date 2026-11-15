@@ -141,6 +141,7 @@ $("entry-form").addEventListener("submit", async (event) => {
   state.entries = await db.getEntries();
   resetForm();
   render();
+  refreshInsights();
 });
 
 $("f-cancel").addEventListener("click", resetForm);
@@ -156,6 +157,7 @@ $("entries").addEventListener("click", async (event) => {
     await db.deleteEntry(date);
     state.entries = await db.getEntries();
     render();
+    refreshInsights();
   } else {
     const entry = state.entries.find((e) => e.date === date);
     state.editingDate = date;
@@ -245,6 +247,7 @@ $("import-file").addEventListener("change", async (event) => {
       render();
       await loadMealDay(nutrition.day);
       await loadTrends();
+      await refreshInsights();
       setBackupMsg(`Imported ${plural(result.count, "weigh-in")} and ${plural(result.mealCount, "meal")} (${result.replaced} replaced).`, true);
     }
   } catch (err) {
@@ -281,6 +284,7 @@ async function init() {
     setupTrends(); // and the Nutrition trends card's (see trends-view.js)
     await loadMealDay(todayISO());
     await loadTrends();
+    await refreshInsights(); // catches its own errors
   } catch (err) {
     console.error(err);
     $("meals-empty").textContent = "Nutrition couldn't load: " + err.message + ". Close and reopen the app to finish updating.";
