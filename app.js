@@ -1,6 +1,6 @@
 // Phase 2: load data from IndexedDB, render, and handle the form.
 
-const state = { entries: [], goals: null, editingDate: null, range: "90D" };
+const state = { entries: [], goals: null, editingDate: null, range: "90D", tab: "today" };
 const $ = (id) => document.getElementById(id);
 
 // ---------- Helpers ----------
@@ -46,7 +46,8 @@ function render() {
     setText("goal", goals.goalWeight.toFixed(1));
   }
   renderEntries(entries);
-  renderChart(entries, state.range);
+  // A chart drawn while its tab is hidden comes out 0 px wide, so draw it only when it shows.
+  if (state.tab === "weight") renderChart(entries, state.range);
   if (entries.length === 0) return;
 
   const today = dayNumber(todayISO());
@@ -56,7 +57,9 @@ function render() {
   const month = changeOver(entries, 30, today);
 
   setText("current", latest.weight.toFixed(1));
-  setText("lastDate", formatDate(latest.date));
+  const avg = targetWeight(entries, todayISO());
+  setText("todayWeightSub", (daysAgo === 0 ? "Logged today" : `Last weigh-in ${formatDate(latest.date)}`) +
+    (avg === null ? "" : ` · 7-day avg ${avg.toFixed(1)}`));
   setText("weekChange", week === null ? "--" : signed(week));
   setText("monthChange", month === null ? "--" : signed(month));
   setText("trend", trendLabel(trendPerWeek(entries, today)));
@@ -103,7 +106,7 @@ function renderEntries(entries) {
   });
 }
 
-// ---------- Entry form ----------
+// ---------- Log weight dialog ----------
 function resetForm() {
   state.editingDate = null;
   $("f-date").value = todayISO();
@@ -111,10 +114,17 @@ function resetForm() {
   $("f-notes").value = "";
   $("f-date").disabled = false;
   $("f-submit").textContent = "Save entry";
-  $("f-cancel").hidden = true;
   $("form-title").textContent = "Log weight";
   showError("form-error", "");
 }
+
+function openEntryDialog() {
+  resetForm();
+  $("entry-dialog").showModal();
+}
+
+// Every "Log weight" button (Today and Weight tabs) opens the same dialog.
+document.querySelectorAll('[data-action="log-weight"]').forEach((b) => b.addEventListener("click", openEntryDialog));
 
 function validateEntry(date, weight) {
   if (!date) return "Choose a date.";
@@ -139,13 +149,14 @@ $("entry-form").addEventListener("submit", async (event) => {
 
   await db.saveEntry({ date, weight: round1(weight), notes: $("f-notes").value.trim() });
   state.entries = await db.getEntries();
+  $("entry-dialog").close();
   resetForm();
   render();
   loadTargets(); // your targets follow your weight
   refreshInsights();
 });
 
-$("f-cancel").addEventListener("click", resetForm);
+$("f-cancel").addEventListener("click", () => $("entry-dialog").close());
 
 // One listener on the list handles every Edit/Delete button (event delegation).
 $("entries").addEventListener("click", async (event) => {
@@ -162,16 +173,16 @@ $("entries").addEventListener("click", async (event) => {
     refreshInsights();
   } else {
     const entry = state.entries.find((e) => e.date === date);
+    resetForm();
     state.editingDate = date;
     $("f-date").value = entry.date;
     $("f-date").disabled = true; // changing the date would create a different entry
     $("f-weight").value = entry.weight;
     $("f-notes").value = entry.notes || "";
     $("f-submit").textContent = "Update entry";
-    $("f-cancel").hidden = false;
     $("form-title").textContent = "Edit entry";
+    $("entry-dialog").showModal();
     $("f-weight").focus();
-    $("entry-form").scrollIntoView({ behavior: "smooth", block: "center" });
   }
 });
 
@@ -197,6 +208,26 @@ $("goals-form").addEventListener("submit", async (event) => {
   await db.saveGoals(state.goals);
   $("goals-dialog").close();
   render();
+});
+
+// ---------- Tabs ----------
+const TAB_TITLES = { today: "Today", weight: "Weight", trends: "Trends", settings: "Settings" };
+
+function showTab(name) {
+  state.tab = name;
+  document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== name));
+  document.querySelectorAll("#tabbar .tab").forEach((t) =>
+    t.dataset.tab === name ? t.setAttribute("aria-current", "page") : t.removeAttribute("aria-current"));
+  $("page-title").textContent = TAB_TITLES[name];
+  window.scrollTo(0, 0);
+  // Charts are drawn only on a visible tab (see render), so draw them now.
+  if (name === "weight") render();
+  if (name === "trends" && trends.start) renderTrends();
+}
+
+$("tabbar").addEventListener("click", (event) => {
+  const tab = event.target.closest(".tab");
+  if (tab) showTab(tab.dataset.tab);
 });
 
 // ---------- Range chips ----------
@@ -277,7 +308,7 @@ async function init() {
   state.entries = entries;
   state.goals = goals || null;
   state.range = pickDefaultRange(entries);
-  resetForm();
+  showTab("today"); // the app always opens on Today
   render();
   renderBackupStatus();
   if (!goals) openGoals(); // first run: ask for start and goal weight
@@ -298,7 +329,7 @@ async function init() {
 
 init().catch((err) => {
   console.error(err);
-  showError("form-error", err instanceof DOMException
+  showError("app-error", err instanceof DOMException
     ? "Couldn't open local storage. Try a normal (non-private) browser window."
     : "Something went wrong while starting: " + err.message);
 });

@@ -223,6 +223,16 @@ async function loadTargets() {
     }
   }
   renderNutrition();
+  renderTargetsSummary();
+}
+
+// One line on the Settings tab: what your targets are set to.
+function renderTargetsSummary() {
+  const t = nutrition.targets;
+  $("targets-summary").textContent = !t ? "Set after your first weigh-in" :
+    `TDEE ${formatAmount(t.tdee, 0)} kcal` + (t.deficit ? ` − ${formatAmount(t.deficit, 0)}` : "") +
+    ` · fat ${t.fatPerLb} g/lb · protein ${t.proteinLow}–${t.proteinHigh} g/lb` +
+    ` · fiber ${t.fiberLow}–${t.fiberHigh} g · sodium ≤ ${formatAmount(t.sodiumLimit, 0)} mg`;
 }
 
 function readTargetsForm() {
@@ -277,5 +287,6 @@ function setupTargets() {
     nutrition.targets = settings;
     $("targets-dialog").close();
     renderNutrition();
+    renderTargetsSummary();
   });
 }

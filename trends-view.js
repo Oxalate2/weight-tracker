@@ -84,11 +84,14 @@ function renderTrendChart(series, nutrient, average) {
   const colorFor = (p) => (p.partial ? warn + "99" : p.date === trends.today ? accent + "55" : accent + "cc");
   const unitText = (v) => `${formatAmount(v, nutrient.decimals)} ${nutrient.unit}`;
 
+  // Only days with a value get a bar. A null "bar" can still be the nearest point to your
+  // finger, and a tooltip with nothing in it crashes Chart.js.
+  const withValue = series.filter((p) => p.value !== null);
   const datasets = [{
     type: "bar",
     label: nutrient.label,
-    data: series.map((p) => ({ x: dayNumber(p.date) * DAY_MS, y: p.value, point: p })),
-    backgroundColor: series.map(colorFor),
+    data: withValue.map((p) => ({ x: dayNumber(p.date) * DAY_MS, y: p.value, point: p })),
+    backgroundColor: withValue.map(colorFor),
     borderRadius: 4,
     barPercentage: 0.8,
     categoryPercentage: 1,
@@ -146,9 +149,11 @@ function renderTrendChart(series, nutrient, average) {
           padding: 10,
           cornerRadius: 10,
           // Only the bars get tooltips; the average already shows in the tiles below.
-          filter: (item) => item.dataset.type === "bar" && item.parsed.y !== null,
+          filter: (item) => item.dataset.type === "bar",
+          displayColors: false,
           callbacks: {
-            title: (items) => axisDate(items[0].parsed.x, true),
+            // items can be empty when the nearest point is the average line (filtered out above)
+            title: (items) => (items.length ? axisDate(items[0].parsed.x, true) : ""),
             label: (item) => `${nutrient.label}: ${unitText(item.parsed.y)}`,
             afterLabel: (item) => {
               const p = item.raw.point;
