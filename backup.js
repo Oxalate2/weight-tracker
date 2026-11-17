@@ -1,10 +1,11 @@
 // Export and import of your data as a JSON file. No page code here except file handling.
 
-// Version 1: entries + goals. Version 2 adds meals. Version 1 files still import fine.
-const BACKUP_VERSION = 2;
+// Version 1: entries + goals. Version 2 adds meals. Version 3 adds eating targets.
+// Older files still import fine.
+const BACKUP_VERSION = 3;
 
 async function exportBackup() {
-  const [entries, goals, meals] = await Promise.all([db.getEntries(), db.getGoals(), db.getAllMeals()]);
+  const [entries, goals, meals, targets] = await Promise.all([db.getEntries(), db.getGoals(), db.getAllMeals(), db.getMeta("targets")]);
   entries.sort((a, b) => a.date.localeCompare(b.date));
   meals.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
   const backup = {
@@ -12,6 +13,7 @@ async function exportBackup() {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     goals: goals ? { startWeight: goals.startWeight, goalWeight: goals.goalWeight } : null,
+    targets: targets?.value ?? null,
     entries,
     meals,
   };
@@ -76,13 +78,16 @@ function parseBackup(text) {
     if (error) throw new Error(`Meal ${i + 1}: ${error}`);
     return meal;
   });
-  return { entries, goals, meals };
+  // Version 1-2 backups have no targets. A broken targets block is skipped, not fatal:
+  // it's easy to set again, unlike your weigh-ins and meals.
+  const targets = data.targets ? validateTargets(withTargetDefaults(data.targets)).settings ?? null : null;
+  return { entries, goals, meals, targets };
 }
 
 // Merge a backup into the current data. Weigh-ins are matched by date, meals by id;
 // a match is replaced by the backup's version, everything else is added.
 async function importBackup(file) {
-  const { entries, goals, meals } = parseBackup(await file.text());
+  const { entries, goals, meals, targets } = parseBackup(await file.text());
   const existingDates = new Set((await db.getEntries()).map((e) => e.date));
   const existingMeals = new Set((await db.getAllMeals()).map((m) => m.id));
   const replaced = entries.filter((e) => existingDates.has(e.date)).length +
@@ -94,5 +99,6 @@ async function importBackup(file) {
   await db.saveEntries(entries);
   await db.saveMeals(meals);
   if (goals && !(await db.getGoals())) await db.saveGoals(goals); // keep your current goals if you have them
+  if (targets && !(await db.getMeta("targets"))) await db.saveMeta("targets", targets); // same for targets
   return { count: entries.length, mealCount: meals.length, replaced };
 }

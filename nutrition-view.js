@@ -3,7 +3,7 @@
 // That works because nothing here runs until app.js calls setupNutrition() during startup,
 // and by then every script has loaded.
 
-const nutrition = { day: null, meals: [], editingId: null };
+const nutrition = { day: null, meals: [], editingId: null, targets: null }; // targets: your saved settings
 
 const formatAmount = (value, decimals) => value.toLocaleString(undefined, { maximumFractionDigits: decimals });
 
@@ -24,13 +24,31 @@ async function loadMealDay(day) {
 
 // ---------- Rendering ----------
 function renderNutrition() {
+  if (!nutrition.day) return; // nutrition hasn't started yet (see setupNutrition)
   $("n-day").textContent = dayLabel(nutrition.day);
   $("n-next").disabled = nutrition.day >= todayISO(); // no logging meals in the future
-  renderTotals(dailyTotals(nutrition.meals));
+  renderTotals(dailyTotals(nutrition.meals), dayTargets());
   renderMeals(nutrition.meals);
 }
 
-function renderTotals(totals) {
+// The shown day's targets, worked out from your weight up to that day, or null if there are
+// no target settings or no weigh-in yet. state.entries lives in app.js.
+function dayTargets() {
+  const note = $("n-targets-note");
+  const weight = targetWeight(state.entries, nutrition.day);
+  if (!nutrition.targets || weight === null) {
+    note.textContent = state.entries.length ? "" : "Log a weigh-in to see your eating targets.";
+    note.hidden = !note.textContent;
+    return null;
+  }
+  const t = dailyTargets(nutrition.targets, weight);
+  note.textContent = `Targets for ${weight.toFixed(1)} lb (7-day average)` +
+    (nutrition.targets.deficit ? ` · TDEE ${formatAmount(t.tdee, 0)} − ${formatAmount(nutrition.targets.deficit, 0)} deficit` : "");
+  note.hidden = false;
+  return t;
+}
+
+function renderTotals(totals, targets) {
   const grid = $("n-totals");
   grid.innerHTML = "";
   for (const n of NUTRIENTS) {
@@ -55,8 +73,39 @@ function renderTotals(totals) {
         tile.append(note);
       }
     }
+    const target = targets?.[n.key];
+    if (target) tile.append(...targetLine(n.key, target, totals.count - missing === 0 ? 0 : total));
     grid.append(tile);
   }
+}
+
+// "of 144–180" plus a thin bar in the nutrient's own color (see styles.css).
+// The text says where you stand: "✓" once in range, "over" (in amber) past the top.
+// Sodium is a limit: "limit 2,000", with no ✓ (staying under is the point, not reaching it).
+// Fiber has a floor: under the goal but past the floor says "floor ✓".
+function targetLine(key, target, total) {
+  const line = document.createElement("p");
+  const range = target.range;
+  let status = targetStatus(total, range);
+  const amount = target.span ? `${formatAmount(range[0], 0)}–${formatAmount(range[1], 0)}` : formatAmount(target.goal, 0);
+  let suffix = { under: "", in: " ✓", over: " · over" }[status];
+  if (target.limit && status === "in") suffix = "";
+  if (target.floor !== undefined && status === "under" && total >= target.floor) {
+    status = "floor";
+    suffix = " · floor ✓";
+  }
+  line.className = "target " + status;
+  line.textContent = (target.limit ? "limit " : "of ") + amount + suffix;
+  const bar = document.createElement("div");
+  bar.className = "tbar";
+  const fill = document.createElement("div");
+  fill.className = `tbar-fill fill-${key}`;
+  fill.style.width = Math.min(100, (total / target.goal) * 100) + "%";
+  bar.append(fill);
+  line.title = target.limit
+    ? (status === "over" ? "Over your daily limit" : "Under your daily limit")
+    : { under: "Under target", floor: "Past the floor, under the goal", in: "In target range", over: "Over target" }[status];
+  return [line, bar];
 }
 
 // "P 42g · C 70g · F 18g", skipping any that weren't recorded
@@ -128,6 +177,7 @@ function setupNutrition() {
   $("n-prev").addEventListener("click", () => loadMealDay(shiftDay(nutrition.day, -1)));
   $("n-next").addEventListener("click", () => loadMealDay(shiftDay(nutrition.day, 1)));
   $("add-meal-btn").addEventListener("click", () => openMealDialog(null));
+  setupTargets();
   $("m-cancel").addEventListener("click", () => $("meal-dialog").close());
 
   $("meal-form").addEventListener("submit", async (event) => {
@@ -156,5 +206,76 @@ function setupNutrition() {
     await loadMealDay(nutrition.day);
     await loadTrends();
     await refreshInsights();
+  });
+}
+
+// ---------- Eating targets ----------
+// Load your target settings. The first time there's a weigh-in, start from the defaults in
+// targets.js, with "calculated at" set to today's 7-day average, and save them.
+async function loadTargets() {
+  const saved = await db.getMeta("targets");
+  nutrition.targets = saved ? withTargetDefaults(saved.value) : null;
+  if (!nutrition.targets) {
+    const weight = targetWeight(state.entries, todayISO());
+    if (weight !== null) {
+      nutrition.targets = { ...TARGET_DEFAULTS, tdeeWeight: weight };
+      await db.saveMeta("targets", nutrition.targets);
+    }
+  }
+  renderNutrition();
+}
+
+function readTargetsForm() {
+  const raw = {};
+  for (const f of TARGET_FIELDS) {
+    if ($(`tg-${f.key}`).validity.badInput) return { error: `${f.label} must be a number.` };
+    raw[f.key] = $(`tg-${f.key}`).value;
+  }
+  return validateTargets(raw);
+}
+
+// Live preview of today's targets while you edit the numbers.
+function renderTargetsPreview() {
+  const preview = $("tg-preview");
+  const { settings, error } = readTargetsForm();
+  const weight = targetWeight(state.entries, todayISO());
+  if (error || weight === null) {
+    preview.textContent = weight === null ? "Log a weigh-in to see your targets." : "";
+    return;
+  }
+  const t = dailyTargets(settings, weight);
+  const span = (x) => `${formatAmount(x.range[0], 0)}–${formatAmount(x.range[1], 0)}`;
+  preview.textContent = `Today, at ${weight.toFixed(1)} lb: ${formatAmount(t.calories.goal, 0)} kcal · ` +
+    `fat ${t.fat.goal} g · protein ${span(t.protein)} g · carbs ${span(t.carbs)} g · ` +
+    `fiber ${span(t.fiber)} g (floor ${t.fiber.floor}) · sodium under ${formatAmount(t.sodium.goal, 0)} mg`;
+}
+
+function openTargetsDialog() {
+  const current = nutrition.targets ?? withTargetDefaults({ tdeeWeight: targetWeight(state.entries, todayISO()) });
+  for (const f of TARGET_FIELDS) $(`tg-${f.key}`).value = current[f.key] ?? "";
+  showError("targets-error", "");
+  renderTargetsPreview();
+  $("targets-dialog").showModal();
+}
+
+function setupTargets() {
+  $("targets-btn").addEventListener("click", openTargetsDialog);
+  $("tg-cancel").addEventListener("click", () => $("targets-dialog").close());
+  $("targets-form").addEventListener("input", () => {
+    showError("targets-error", "");
+    renderTargetsPreview();
+  });
+  $("targets-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const { settings, error } = readTargetsForm();
+    if (error) return showError("targets-error", error);
+    try {
+      await db.saveMeta("targets", settings);
+    } catch (err) {
+      return showError("targets-error", "Couldn't save: " + err.message);
+    }
+    nutrition.targets = settings;
+    $("targets-dialog").close();
+    renderNutrition();
   });
 }

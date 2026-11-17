@@ -176,3 +176,22 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .weeks td { padding: 8px 0; border-top: 1px solid var(--border); }
 .weeks .num { text-align: right; white-space: nowrap; }
 .weeks small { color: var(--muted); font-size: 0.75rem; }
+
+/* ---------- Eating targets ---------- */
+#targets-btn { margin-left: auto; cursor: pointer; }
+.target { font-size: 0.7rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tbar { height: 4px; background: var(--border); border-radius: 99px; margin-top: 5px; overflow: hidden; }
+.tbar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width 0.4s ease; }
+/* One color per nutrient, so the bars are easy to tell apart at a glance */
+.fill-calories { background: var(--accent); }
+.fill-protein { background: #ff7a9a; }
+.fill-carbs { background: #4fd1c5; }
+.fill-fat { background: #b38cff; }
+.fill-fiber { background: #a3d977; }
+.fill-sodium { background: #d9a679; }
+.target.in, .target.floor { color: var(--good); }
+.target.over { color: var(--warn); }
+.targets-note { color: var(--muted); font-size: 0.8rem; margin: -4px 0 12px; }
+.dialog-help { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+.target-preview { font-size: 0.85rem; background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+.target-preview:empty { display: none; }

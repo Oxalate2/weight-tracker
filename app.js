@@ -141,6 +141,7 @@ $("entry-form").addEventListener("submit", async (event) => {
   state.entries = await db.getEntries();
   resetForm();
   render();
+  loadTargets(); // your targets follow your weight
   refreshInsights();
 });
 
@@ -157,6 +158,7 @@ $("entries").addEventListener("click", async (event) => {
     await db.deleteEntry(date);
     state.entries = await db.getEntries();
     render();
+    loadTargets();
     refreshInsights();
   } else {
     const entry = state.entries.find((e) => e.date === date);
@@ -246,6 +248,7 @@ $("import-file").addEventListener("change", async (event) => {
       state.goals = (await db.getGoals()) || null;
       render();
       await loadMealDay(nutrition.day);
+      await loadTargets();
       await loadTrends();
       await refreshInsights();
       setBackupMsg(`Imported ${plural(result.count, "weigh-in")} and ${plural(result.mealCount, "meal")} (${result.replaced} replaced).`, true);
@@ -283,6 +286,7 @@ async function init() {
     setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
     setupTrends(); // and the Nutrition trends card's (see trends-view.js)
     await loadMealDay(todayISO());
+    await loadTargets();
     await loadTrends();
     await refreshInsights(); // catches its own errors
   } catch (err) {
