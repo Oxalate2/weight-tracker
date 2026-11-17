@@ -94,6 +94,22 @@
         <div class="chart-empty" id="chart-empty" hidden>No entries in this range</div>
       </section>
 
+      <section class="card" aria-labelledby="measure-title">
+        <div class="card-head">
+          <h2 id="measure-title">Measurements</h2>
+          <button class="btn" type="button" id="measure-btn">Log measurements</button>
+        </div>
+        <p class="measure-due" id="measure-due" role="status" hidden></p>
+        <div class="totals measure-latest" id="measure-latest" hidden></div>
+        <div id="measure-chart-area" hidden>
+          <div class="trend-toolbar"><select id="measure-site" aria-label="Body part to chart"></select></div>
+          <div class="chart-wrap trend-wrap"><canvas id="measure-canvas" aria-label="Measurement history chart" role="img"></canvas></div>
+          <div class="chart-empty trend-wrap" id="measure-chart-empty" hidden></div>
+        </div>
+        <ul class="entries" id="measure-list"></ul>
+        <p class="empty" id="measure-empty">No measurements yet. Every 2 weeks is plenty: your waist changes slowly, so more often mostly shows tape noise.</p>
+      </section>
+
       <section class="card" aria-labelledby="recent-title">
         <div class="card-head"><h2 id="recent-title">Recent entries</h2></div>
         <ul class="entries" id="entries"></ul>
@@ -120,6 +136,10 @@
         <p class="label">Estimated maintenance</p>
         <p class="insight-value" id="i-value">--</p>
         <p class="insight-detail" id="i-detail"></p>
+        <div class="calibrate" id="i-calibrate" hidden>
+          <p id="i-cal-text"></p>
+          <button class="btn" type="button" id="i-cal-btn" hidden></button>
+        </div>
         <table class="weeks">
           <thead><tr><th scope="col">Week</th><th scope="col" class="num">Avg kcal</th><th scope="col" class="num">Weight</th></tr></thead>
           <tbody id="i-weeks"></tbody>
@@ -219,6 +239,28 @@
     </form>
   </dialog>
 
+  <dialog id="measure-dialog">
+    <form id="measure-form" novalidate>
+      <h2 id="measure-form-title">Log measurements</h2>
+      <p class="dialog-help">In inches. Fill in what you measured and leave the rest blank. Measure in the morning, breathing out normally, with the tape snug but not pressing in. Waist goes around at your navel.</p>
+      <label>Date <input type="date" id="ms-date" required></label>
+      <div class="fields">
+        <label>Waist (in) <input type="number" id="ms-waist" inputmode="decimal" step="0.25" min="0"></label>
+        <label>Hips (in) <input type="number" id="ms-hips" inputmode="decimal" step="0.25" min="0"></label>
+        <label>Chest (in) <input type="number" id="ms-chest" inputmode="decimal" step="0.25" min="0"></label>
+        <label>Thigh (in) <input type="number" id="ms-thigh" inputmode="decimal" step="0.25" min="0"></label>
+        <label>Upper arm (in) <input type="number" id="ms-arm" inputmode="decimal" step="0.25" min="0"></label>
+        <label>Neck (in) <input type="number" id="ms-neck" inputmode="decimal" step="0.25" min="0"></label>
+      </div>
+      <label>Notes (optional) <input type="text" id="ms-notes" maxlength="200"></label>
+      <p class="error" id="measure-error" role="alert" hidden></p>
+      <div class="actions">
+        <button class="btn primary" type="submit">Save measurements</button>
+        <button class="btn" type="button" id="ms-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="meal-dialog">
     <form id="meal-form" novalidate>
       <h2 id="meal-title">Add meal</h2>
@@ -247,12 +289,14 @@
   <script src="nutrition.js"></script>
   <script src="targets.js"></script>
   <script src="insights.js"></script>
+  <script src="measurements.js"></script>
   <script src="backup.js"></script>
   <script src="chart-view.js"></script>
   <script src="nutrition-view.js"></script>
   <script src="targets-view.js"></script>
   <script src="trends-view.js"></script>
   <script src="insights-view.js"></script>
+  <script src="measurements-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

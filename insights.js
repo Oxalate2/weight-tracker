@@ -37,6 +37,9 @@ function estimateMaintenance(entries, meals, today) {
   if (!result.ready) return result;
 
   result.avgIntake = mean(kcal.map(([, total]) => total));
+  // The weight this maintenance belongs to: lighter bodies burn less, so it's only right
+  // to compare it with your targets at the weight you were during these 28 days.
+  result.avgWeight = mean(weighIns.map((e) => e.weight));
   const lbPerDay = weightSlopePerDay(weighIns);
   result.lbPerWeek = lbPerDay * 7;
   const raw = result.avgIntake - lbPerDay * KCAL_PER_LB;

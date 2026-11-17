@@ -103,3 +103,24 @@ function validateTargets(raw) {
   if (used > t.calories.goal) return { error: "Fat and protein alone add up to more than your calories. Lower them or the deficit." };
   return { settings };
 }
+
+// ---------- Calibrating from measured maintenance ----------
+// estimateMaintenance() (insights.js) measures what you really burn from your meals and weigh-ins.
+// Gaps smaller than this are within that estimate's own error, so they aren't worth acting on.
+const CALIBRATE_MIN_GAP = 100; // kcal
+
+// Your settings vs. the measurement, both at the weight you averaged while it was measured.
+// Returns { weight, predicted, measured, gap, worthIt }; gap is measured − predicted.
+function compareMaintenance(settings, est) {
+  const weight = Math.round(est.avgWeight * 10) / 10;
+  const predicted = Math.round(tdeeAt(settings, weight) / 10) * 10;
+  const gap = est.maintenance - predicted;
+  return { weight, predicted, measured: est.maintenance, gap, worthIt: Math.abs(gap) >= CALIBRATE_MIN_GAP };
+}
+
+// Your settings with the measured maintenance as your TDEE, at the weight it was measured at.
+// Everything else (deficit, protein, fat, fiber, sodium) stays as you set it.
+// Returns { settings } or { error }, through the same checks as the targets dialog.
+function calibratedTargets(settings, est) {
+  return validateTargets({ ...settings, tdee: est.maintenance, tdeeWeight: Math.round(est.avgWeight * 10) / 10 });
+}

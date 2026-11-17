@@ -120,13 +120,20 @@ function setupTargets() {
     const { settings, error } = readTargetsForm();
     if (error) return showError("targets-error", error);
     try {
-      await db.saveMeta("targets", settings);
+      await saveTargetSettings(settings);
     } catch (err) {
       return showError("targets-error", "Couldn't save: " + err.message);
     }
-    targetSettings = settings;
     $("targets-dialog").close();
-    renderNutrition();
-    renderTargetsSummary();
   });
+}
+
+// Save new settings (already checked by validateTargets) and redraw everything that shows them.
+// Used by the dialog and by "Use measured maintenance" on the Trends tab.
+async function saveTargetSettings(settings) {
+  await db.saveMeta("targets", settings);
+  targetSettings = settings;
+  renderNutrition();
+  renderTargetsSummary();
+  await refreshInsights(); // the calibration line compares against your settings
 }

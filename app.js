@@ -216,7 +216,10 @@ function showTab(name) {
 // A chart drawn while its tab is hidden comes out 0 px wide, so each chart is drawn only
 // while its tab shows: when you switch to it, and on every redraw after that.
 function drawVisibleChart() {
-  if (state.tab === "weight") renderChart(sortedEntries(), state.range);
+  if (state.tab === "weight") {
+    renderChart(sortedEntries(), state.range);
+    renderMeasureChart();
+  }
   if (state.tab === "trends") renderTrends();
 }
 
@@ -275,7 +278,10 @@ $("import-file").addEventListener("change", async (event) => {
       await entriesChanged();
       await loadMealDay(nutrition.day);
       await loadTrends();
-      setBackupMsg(`Imported ${plural(result.count, "weigh-in")} and ${plural(result.mealCount, "meal")} (${result.replaced} replaced).`, true);
+      await loadMeasurements();
+      const parts = [plural(result.count, "weigh-in"), plural(result.mealCount, "meal")];
+      if (result.measurementCount) parts.push(measurementSets(result.measurementCount));
+      setBackupMsg(`Imported ${listText(parts)} (${result.replaced} replaced).`, true);
     }
   } catch (err) {
     setBackupMsg(err.message);
@@ -310,6 +316,7 @@ async function init() {
     setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
     setupTrends(); // and the Nutrition trends card's (see trends-view.js)
     setupTargets(); // and the eating targets dialog's (see targets-view.js)
+    setupInsights(); // and the "Use measured maintenance" button's (see insights-view.js)
     await loadMealDay(todayISO());
     await loadTargets();
     await loadTrends();
@@ -321,7 +328,19 @@ async function init() {
   }
 }
 
-init().catch((err) => {
+// Measurements load on their own, so a problem with them can't hide anything else.
+async function initMeasurements() {
+  try {
+    setupMeasurements(); // see measurements-view.js
+    await loadMeasurements();
+  } catch (err) {
+    console.error(err);
+    $("measure-empty").textContent = "Measurements couldn't load: " + err.message + ". Close and reopen the app to finish updating.";
+    $("measure-empty").hidden = false;
+  }
+}
+
+init().then(initMeasurements).catch((err) => {
   console.error(err);
   showError("app-error", err instanceof DOMException
     ? "Couldn't open local storage. Try a normal (non-private) browser window."

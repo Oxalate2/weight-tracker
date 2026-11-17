@@ -1,12 +1,14 @@
 // Export and import of your data as a JSON file. No page code here except file handling.
 
 // Version 1: entries + goals. Version 2 adds meals. Version 3 adds eating targets.
-// Older files still import fine.
-const BACKUP_VERSION = 3;
+// Version 4 adds body measurements. Older files still import fine.
+const BACKUP_VERSION = 4;
 
 async function exportBackup() {
-  const [entries, goals, meals, targets] = await Promise.all([db.getEntries(), db.getGoals(), db.getAllMeals(), db.getMeta("targets")]);
+  const [entries, goals, meals, targets, measurements] = await Promise.all([
+    db.getEntries(), db.getGoals(), db.getAllMeals(), db.getMeta("targets"), db.getMeasurements()]);
   entries.sort((a, b) => a.date.localeCompare(b.date));
+  measurements.sort((a, b) => a.date.localeCompare(b.date));
   meals.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
   const backup = {
     app: "weight-tracker",
@@ -16,6 +18,7 @@ async function exportBackup() {
     targets: targets?.value ?? null,
     entries,
     meals,
+    measurements,
   };
   const name = `weight-backup-${todayISO()}.json`;
   const file = new File([JSON.stringify(backup, null, 2)], name, { type: "application/json" });
@@ -81,24 +84,43 @@ function parseBackup(text) {
   // Version 1-2 backups have no targets. A broken targets block is skipped, not fatal:
   // it's easy to set again, unlike your weigh-ins and meals.
   const targets = data.targets ? validateTargets(withTargetDefaults(data.targets)).settings ?? null : null;
-  return { entries, goals, meals, targets };
+  // Version 1-3 backups have no measurements.
+  const rawMeasurements = data.measurements ?? [];
+  if (!Array.isArray(rawMeasurements)) throw new Error("The measurements in that backup are unreadable.");
+  const measurements = rawMeasurements.map((m, i) => {
+    const { measurement, error } = validateMeasurement(m); // same rules as the measurements dialog
+    if (error) throw new Error(`Measurement ${i + 1}: ${error}`);
+    return measurement;
+  });
+  return { entries, goals, meals, targets, measurements };
 }
 
-// Merge a backup into the current data. Weigh-ins are matched by date, meals by id;
+// "1 set of measurements", "3 sets of measurements"
+const measurementSets = (n) => `${n} ${n === 1 ? "set" : "sets"} of measurements`;
+
+// Merge a backup into the current data. Weigh-ins and measurements are matched by date, meals by id;
 // a match is replaced by the backup's version, everything else is added.
 async function importBackup(file) {
-  const { entries, goals, meals, targets } = parseBackup(await file.text());
+  const { entries, goals, meals, targets, measurements } = parseBackup(await file.text());
   const existingDates = new Set((await db.getEntries()).map((e) => e.date));
   const existingMeals = new Set((await db.getAllMeals()).map((m) => m.id));
+  const existingMeasured = new Set((await db.getMeasurements()).map((m) => m.date));
   const replaced = entries.filter((e) => existingDates.has(e.date)).length +
-    meals.filter((m) => existingMeals.has(m.id)).length;
+    meals.filter((m) => existingMeals.has(m.id)).length +
+    measurements.filter((m) => existingMeasured.has(m.date)).length;
   // plural() lives in app.js; it exists by the time anyone clicks Import.
-  const message = `Import ${plural(entries.length, "weigh-in")} and ${plural(meals.length, "meal")}?` +
+  const parts = [plural(entries.length, "weigh-in"), plural(meals.length, "meal")];
+  if (measurements.length) parts.push(measurementSets(measurements.length));
+  const message = `Import ${listText(parts)}?` +
     (replaced ? ` ${replaced} already ${replaced === 1 ? "exists" : "exist"} here and will be replaced by the backup's version.` : "");
   if (!confirm(message)) return null;
   await db.saveEntries(entries);
   await db.saveMeals(meals);
+  await db.saveMeasurements(measurements);
   if (goals && !(await db.getGoals())) await db.saveGoals(goals); // keep your current goals if you have them
   if (targets && !(await db.getMeta("targets"))) await db.saveMeta("targets", targets); // same for targets
-  return { count: entries.length, mealCount: meals.length, replaced };
+  return { count: entries.length, mealCount: meals.length, measurementCount: measurements.length, replaced };
 }
+
+// ["a", "b", "c"] -> "a, b and c"
+const listText = (parts) => parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0];

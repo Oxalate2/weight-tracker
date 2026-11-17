@@ -3,8 +3,9 @@
 //   entries  -> one weigh-in per date, keyed by the date string ("2026-11-06")
 //   settings -> small records keyed by name: "goals", "lastBackup"
 //   meals    -> one record per meal, keyed by a random id, with an index on "date"
+//   measurements -> one set of body measurements per date, keyed by the date string
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const dbReady = new Promise((resolve, reject) => {
   const request = indexedDB.open("weight-tracker", DB_VERSION);
@@ -20,6 +21,9 @@ const dbReady = new Promise((resolve, reject) => {
     if (event.oldVersion < 2) {
       const meals = database.createObjectStore("meals", { keyPath: "id" });
       meals.createIndex("date", "date"); // lets us ask "all meals on this date" directly
+    }
+    if (event.oldVersion < 3) {
+      database.createObjectStore("measurements", { keyPath: "date" });
     }
   };
 
@@ -82,4 +86,9 @@ const db = {
   saveMeal: (meal) => run("meals", "readwrite", (s) => s.put(meal)), // add or replace by id
   deleteMeal: (id) => run("meals", "readwrite", (s) => s.delete(id)),
   saveMeals: (list) => putMany("meals", list),
+  getMeasurements: () => run("measurements", "readonly", (s) => s.getAll()),
+  getMeasurement: (date) => run("measurements", "readonly", (s) => s.get(date)),
+  saveMeasurement: (m) => run("measurements", "readwrite", (s) => s.put(m)), // add or replace by date
+  deleteMeasurement: (date) => run("measurements", "readwrite", (s) => s.delete(date)),
+  saveMeasurements: (list) => putMany("measurements", list),
 };
