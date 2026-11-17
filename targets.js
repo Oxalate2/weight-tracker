@@ -1,5 +1,6 @@
 // Pure eating-target logic: your settings + your weight in, daily targets out.
-// No page or database code here. Uses rollingAverage() and dayNumber() from analytics.js.
+// No page or database code here. The weight it's given is averageWeightOn() from analytics.js,
+// so your targets don't jump around with day-to-day water weight.
 //
 // The rules (all per lb of body weight):
 //   calories = TDEE − deficit, where TDEE follows your weight (see tdeeAt below)
@@ -37,29 +38,19 @@ const TARGET_FIELDS = [
   { key: "sodiumLimit", label: "Sodium limit", min: 500, max: 6000, unit: "mg" },
 ];
 
-// Your weight for the targets on `dayISO`: the average of weigh-ins in the 7 days ending on
-// your latest weigh-in on or before that day. A single weigh-in swings 2-3 lb with water and
-// salt; the average doesn't, so your targets don't jump around for no reason.
-// Returns null when there's no weigh-in on or before that day.
-function targetWeight(entries, dayISO) {
-  const upTo = entries.filter((e) => e.date <= dayISO).sort((a, b) => a.date.localeCompare(b.date));
-  if (upTo.length === 0) return null;
-  return Math.round(rollingAverage(upTo).at(-1).avg * 10) / 10;
-}
-
 // TDEE at `weight`: the TDEE you entered, moved by kcalPerLb for each lb you're above or
 // below the weight it was calculated at. Lighter body, fewer calories burned.
 function tdeeAt(settings, weight) {
   return settings.tdee + settings.kcalPerLb * (weight - settings.tdeeWeight);
 }
 
-// The day's targets at `weight`. Each is { goal, range: [low, high], span }:
-//   goal:  what the progress bar fills toward (the low end for protein and carbs)
-//   range: counts as "on target"; calories and fat get a small band (±5% / ±10%) since
-//          nobody hits a number exactly
-//   span:  true when the range itself is the target, so the page shows "144–180"
-//   floor: (fiber) the least you want; under the goal but at or above this still counts
-//   limit: (sodium) a maximum to stay under, not an amount to reach
+// The day's targets at `weight`. Each is { kind, goal, range: [low, high] }, where kind is:
+//   "goal":  one number to hit (calories, fat). range is a small band around it (±5% / ±10%)
+//            since nobody hits a number exactly.
+//   "range": the range itself is the target (protein, carbs, fiber), shown as "144–180".
+//   "limit": a maximum to stay under, not an amount to reach (sodium).
+// goal is what the progress bar fills toward (the low end for a range, the limit for a limit).
+// Fiber also has a floor: the least you want. Under the range but at or above it still counts.
 // carbs' low end goes with protein's high end (more protein leaves fewer carbs) and vice versa.
 function dailyTargets(settings, weight) {
   const tdee = tdeeAt(settings, weight);
@@ -70,19 +61,22 @@ function dailyTargets(settings, weight) {
   return {
     weight,
     tdee: Math.round(tdee / 10) * 10,
-    calories: { goal: calories, range: [Math.round(calories * 0.95), Math.round(calories * 1.05)] },
-    fat: { goal: fat, range: [Math.round(fat * 0.9), Math.round(fat * 1.1)] },
-    protein: { goal: protein[0], range: protein, span: true },
-    carbs: { goal: carbsFor(protein[1]), range: [carbsFor(protein[1]), carbsFor(protein[0])], span: true },
-    fiber: { goal: settings.fiberLow, range: [settings.fiberLow, settings.fiberHigh], span: true, floor: settings.fiberFloor },
-    sodium: { goal: settings.sodiumLimit, range: [0, settings.sodiumLimit], limit: true },
+    calories: { kind: "goal", goal: calories, range: [Math.round(calories * 0.95), Math.round(calories * 1.05)] },
+    fat: { kind: "goal", goal: fat, range: [Math.round(fat * 0.9), Math.round(fat * 1.1)] },
+    protein: { kind: "range", goal: protein[0], range: protein },
+    carbs: { kind: "range", goal: carbsFor(protein[1]), range: [carbsFor(protein[1]), carbsFor(protein[0])] },
+    fiber: { kind: "range", goal: settings.fiberLow, range: [settings.fiberLow, settings.fiberHigh], floor: settings.fiberFloor },
+    sodium: { kind: "limit", goal: settings.sodiumLimit, range: [0, settings.sodiumLimit] },
   };
 }
 
-// Where a day's total stands against a target range: "under", "in" or "over".
-function targetStatus(total, range) {
-  if (total < range[0]) return "under";
-  return total > range[1] ? "over" : "in";
+// Where a day's total stands against a target: "under", "floor" (under the range but past
+// fiber's floor), "in" or "over". A limit's range starts at 0, so a limit is never "under".
+function targetStatus(total, target) {
+  const [low, high] = target.range;
+  if (total > high) return "over";
+  if (total >= low) return "in";
+  return total >= (target.floor ?? Infinity) ? "floor" : "under";
 }
 
 // Saved settings from before fiber and sodium existed: fill in the new fields' defaults.

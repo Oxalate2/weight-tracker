@@ -36,8 +36,10 @@ function trendLabel(perWeek) {
   return `${perWeek < 0 ? "Down" : "Up"} ${Math.abs(perWeek).toFixed(1)} lb/wk`;
 }
 
+const sortedEntries = () => [...state.entries].sort((a, b) => a.date.localeCompare(b.date));
+
 function render() {
-  const entries = [...state.entries].sort((a, b) => a.date.localeCompare(b.date));
+  const entries = sortedEntries();
   const goals = state.goals;
 
   document.querySelectorAll("#ranges .chip").forEach((c) => c.classList.toggle("is-active", c.dataset.range === state.range));
@@ -46,8 +48,7 @@ function render() {
     setText("goal", goals.goalWeight.toFixed(1));
   }
   renderEntries(entries);
-  // A chart drawn while its tab is hidden comes out 0 px wide, so draw it only when it shows.
-  if (state.tab === "weight") renderChart(entries, state.range);
+  drawVisibleChart();
   if (entries.length === 0) return;
 
   const today = dayNumber(todayISO());
@@ -57,7 +58,7 @@ function render() {
   const month = changeOver(entries, 30, today);
 
   setText("current", latest.weight.toFixed(1));
-  const avg = targetWeight(entries, todayISO());
+  const avg = averageWeightOn(entries, todayISO());
   setText("todayWeightSub", (daysAgo === 0 ? "Logged today" : `Last weigh-in ${formatDate(latest.date)}`) +
     (avg === null ? "" : ` · 7-day avg ${avg.toFixed(1)}`));
   setText("weekChange", week === null ? "--" : signed(week));
@@ -107,24 +108,30 @@ function renderEntries(entries) {
 }
 
 // ---------- Log weight dialog ----------
-function resetForm() {
-  state.editingDate = null;
-  $("f-date").value = todayISO();
-  $("f-weight").value = "";
-  $("f-notes").value = "";
-  $("f-date").disabled = false;
-  $("f-submit").textContent = "Save entry";
-  $("form-title").textContent = "Log weight";
+// Pass an entry to edit it, or nothing to log a new one (like openMealDialog).
+function openEntryDialog(entry = null) {
+  state.editingDate = entry ? entry.date : null;
+  $("form-title").textContent = entry ? "Edit entry" : "Log weight";
+  $("f-submit").textContent = entry ? "Update entry" : "Save entry";
+  $("f-date").value = entry ? entry.date : todayISO();
+  $("f-date").disabled = Boolean(entry); // changing the date would create a different entry
+  $("f-weight").value = entry?.weight ?? "";
+  $("f-notes").value = entry?.notes ?? "";
   showError("form-error", "");
-}
-
-function openEntryDialog() {
-  resetForm();
   $("entry-dialog").showModal();
 }
 
 // Every "Log weight" button (Today and Weight tabs) opens the same dialog.
-document.querySelectorAll('[data-action="log-weight"]').forEach((b) => b.addEventListener("click", openEntryDialog));
+document.querySelectorAll('[data-action="log-weight"]').forEach((b) => b.addEventListener("click", () => openEntryDialog()));
+
+// After any weigh-in is saved or deleted: reload, redraw, and update everything that
+// follows your weight.
+async function entriesChanged() {
+  state.entries = await db.getEntries();
+  render();
+  await ensureTargets(); // your eating targets follow your weight (see targets-view.js)
+  await refreshInsights();
+}
 
 function validateEntry(date, weight) {
   if (!date) return "Choose a date.";
@@ -148,12 +155,8 @@ $("entry-form").addEventListener("submit", async (event) => {
   }
 
   await db.saveEntry({ date, weight: round1(weight), notes: $("f-notes").value.trim() });
-  state.entries = await db.getEntries();
   $("entry-dialog").close();
-  resetForm();
-  render();
-  loadTargets(); // your targets follow your weight
-  refreshInsights();
+  await entriesChanged();
 });
 
 $("f-cancel").addEventListener("click", () => $("entry-dialog").close());
@@ -167,22 +170,9 @@ $("entries").addEventListener("click", async (event) => {
   if (action === "delete") {
     if (!confirm(`Delete the entry for ${formatDate(date)}?`)) return;
     await db.deleteEntry(date);
-    state.entries = await db.getEntries();
-    render();
-    loadTargets();
-    refreshInsights();
+    await entriesChanged();
   } else {
-    const entry = state.entries.find((e) => e.date === date);
-    resetForm();
-    state.editingDate = date;
-    $("f-date").value = entry.date;
-    $("f-date").disabled = true; // changing the date would create a different entry
-    $("f-weight").value = entry.weight;
-    $("f-notes").value = entry.notes || "";
-    $("f-submit").textContent = "Update entry";
-    $("form-title").textContent = "Edit entry";
-    $("entry-dialog").showModal();
-    $("f-weight").focus();
+    openEntryDialog(state.entries.find((e) => e.date === date));
   }
 });
 
@@ -211,18 +201,23 @@ $("goals-form").addEventListener("submit", async (event) => {
 });
 
 // ---------- Tabs ----------
-const TAB_TITLES = { today: "Today", weight: "Weight", trends: "Trends", settings: "Settings" };
-
 function showTab(name) {
   state.tab = name;
   document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== name));
-  document.querySelectorAll("#tabbar .tab").forEach((t) =>
-    t.dataset.tab === name ? t.setAttribute("aria-current", "page") : t.removeAttribute("aria-current"));
-  $("page-title").textContent = TAB_TITLES[name];
+  document.querySelectorAll("#tabbar .tab").forEach((t) => {
+    if (t.dataset.tab !== name) return t.removeAttribute("aria-current");
+    t.setAttribute("aria-current", "page");
+    $("page-title").textContent = t.textContent; // the tab's own label
+  });
   window.scrollTo(0, 0);
-  // Charts are drawn only on a visible tab (see render), so draw them now.
-  if (name === "weight") render();
-  if (name === "trends" && trends.start) renderTrends();
+  drawVisibleChart();
+}
+
+// A chart drawn while its tab is hidden comes out 0 px wide, so each chart is drawn only
+// while its tab shows: when you switch to it, and on every redraw after that.
+function drawVisibleChart() {
+  if (state.tab === "weight") renderChart(sortedEntries(), state.range);
+  if (state.tab === "trends") renderTrends();
 }
 
 $("tabbar").addEventListener("click", (event) => {
@@ -275,13 +270,11 @@ $("import-file").addEventListener("change", async (event) => {
   try {
     const result = await importBackup(file);
     if (result) {
-      state.entries = await db.getEntries();
       state.goals = (await db.getGoals()) || null;
-      render();
+      await loadTargets(); // a backup can bring targets with it
+      await entriesChanged();
       await loadMealDay(nutrition.day);
-      await loadTargets();
       await loadTrends();
-      await refreshInsights();
       setBackupMsg(`Imported ${plural(result.count, "weigh-in")} and ${plural(result.mealCount, "meal")} (${result.replaced} replaced).`, true);
     }
   } catch (err) {
@@ -316,6 +309,7 @@ async function init() {
   try {
     setupNutrition(); // attach the Nutrition card's listeners (see nutrition-view.js)
     setupTrends(); // and the Nutrition trends card's (see trends-view.js)
+    setupTargets(); // and the eating targets dialog's (see targets-view.js)
     await loadMealDay(todayISO());
     await loadTargets();
     await loadTrends();

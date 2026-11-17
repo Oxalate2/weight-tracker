@@ -14,6 +14,7 @@ async function loadTrends() {
 }
 
 function renderTrends() {
+  if (!trends.start) return; // not loaded yet (see loadTrends)
   document.querySelectorAll("#t-ranges .chip").forEach((c) => c.classList.toggle("is-active", c.dataset.range === trends.range));
   const nutrient = NUTRIENTS.find((n) => n.key === trends.key);
   const series = dailySeries(trends.meals, trends.start, trends.today, trends.key);

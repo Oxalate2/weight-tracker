@@ -38,6 +38,15 @@ function rollingAverage(entries, windowDays = 7) {
   });
 }
 
+// Your weight on `dayISO`, smoothed: the average of weigh-ins in the 7 days ending on your
+// latest weigh-in on or before that day. A single weigh-in swings 2-3 lb with water and salt;
+// the average doesn't. Later weigh-ins are ignored. Returns null when there's none yet.
+function averageWeightOn(entries, dayISO) {
+  const upTo = entries.filter((e) => e.date <= dayISO).sort((a, b) => a.date.localeCompare(b.date));
+  if (upTo.length === 0) return null;
+  return Math.round(rollingAverage(upTo).at(-1).avg * 10) / 10;
+}
+
 // Change from the entry closest to `days` before the latest one, to the latest.
 // Returns null when there isn't an honest comparison available.
 function changeOver(entries, days, today) {
