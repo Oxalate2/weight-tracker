@@ -97,7 +97,13 @@ body {
 /* ---------- Phase 2: forms, buttons, dialog ---------- */
 .link { font: inherit; font-size: 0.9rem; color: var(--accent); background: none; border: 0; padding: 8px 4px; cursor: pointer; }
 form label { display: grid; gap: 4px; font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
-.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* minmax(0, …) + min-width: 0 let columns shrink below an input's intrinsic width —
+   phone date pickers (iOS Safari especially) are wider than half the dialog and overlap the next field otherwise */
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fields > label { min-width: 0; }
+input { min-width: 0; }
+input[type="date"] { -webkit-appearance: none; appearance: none; display: block; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 input {
   font: inherit; font-size: 1rem; /* 16px+ stops iOS zooming on focus */
   color: var(--text); background: var(--bg);
