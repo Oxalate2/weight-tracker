@@ -26,9 +26,16 @@ async function loadMealDay(day) {
 function renderNutrition() {
   if (!nutrition.day) return; // nutrition hasn't started yet (see setupNutrition)
   $("n-day").textContent = dayLabel(nutrition.day);
+  $("n-date").textContent = longDate(nutrition.day);
   $("n-next").disabled = nutrition.day >= todayISO(); // no logging meals in the future
   renderTotals(dailyTotals(nutrition.meals), dayTargets());
   renderMeals(nutrition.meals);
+}
+
+// "Sunday, November 22"
+function longDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 }
 
 // The shown day's targets, worked out from your weight up to that day, or null if there are
@@ -42,42 +49,86 @@ function dayTargets() {
     return null;
   }
   const t = dailyTargets(targetSettings, weight);
-  note.textContent = `Targets for ${weight.toFixed(1)} lb (7-day average)` +
+  note.textContent = `Targets for ${weight.toFixed(1)} lb, your 7-day average` +
     (targetSettings.deficit ? ` · TDEE ${formatAmount(t.tdee, 0)} − ${formatAmount(targetSettings.deficit, 0)} deficit` : "");
   note.hidden = false;
   return t;
 }
 
+// The calorie ring, protein/carbs/fat beside it, and fiber/sodium in their own tile.
 function renderTotals(totals, targets) {
-  const grid = $("n-totals");
-  grid.innerHTML = "";
+  renderCalorieRing(totals, targets);
+  const macros = $("n-macros");
+  const extras = $("n-extras");
+  macros.innerHTML = "";
+  extras.innerHTML = "";
   for (const n of NUTRIENTS) {
-    const { total, missing } = totals[n.key];
-    const recorded = totals.count - missing > 0; // at least one meal that day recorded it
-    const tile = document.createElement("div");
-    tile.className = "total";
-    tile.innerHTML = `<p class="label"></p><p class="total-value"></p>`;
-    tile.querySelector(".label").textContent = n.label;
-    const value = tile.querySelector(".total-value");
-    if (!recorded) {
-      value.textContent = "--"; // no meal that day recorded this nutrient
-    } else {
-      value.textContent = formatAmount(total, n.decimals);
-      const unit = document.createElement("small");
-      unit.textContent = n.unit;
-      value.append(unit);
-      if (missing > 0) {
-        // Some meals skipped this nutrient, so the real total is higher than shown.
-        const note = document.createElement("span");
-        note.className = "partial";
-        note.textContent = `${missing} untracked`;
-        tile.append(note);
-      }
-    }
-    const target = targets?.[n.key];
-    if (target) tile.append(...targetLine(n.key, target, recorded ? total : 0)); // see targets-view.js
-    grid.append(tile);
+    if (n.key === "calories") continue;
+    const mini = n.key === "fiber" || n.key === "sodium"; // the small tile puts the target on its own line
+    (mini ? extras : macros).append(nutrientBar(n, totals, targets?.[n.key], mini));
   }
+}
+
+function renderCalorieRing(totals, targets) {
+  const { total, missing } = totals.calories;
+  const ring = $("cal-ring");
+  const target = targets?.calories;
+  ring.classList.remove("over");
+  if (!target) {
+    $("cal-num").textContent = formatAmount(total, 0);
+    $("cal-unit").textContent = "kcal eaten";
+    setRing(ring, 0);
+  } else {
+    const left = target.goal - total;
+    ring.classList.toggle("over", targetStatus(total, target) === "over");
+    $("cal-num").textContent = formatAmount(Math.abs(left), 0);
+    $("cal-unit").textContent = left >= 0 ? "kcal left" : "kcal over";
+    setRing(ring, total / target.goal);
+  }
+  const sub = target ? `${formatAmount(total, 0)} eaten of ${formatAmount(target.goal, 0)}`
+    : totals.count ? plural(totals.count, "meal") : "Nothing logged yet";
+  $("cal-sub").textContent = sub + (missing > 0 ? ` · ${missing} without calories` : "");
+}
+
+// "Protein   142 / 144–180 g" over a bar in the nutrient's color. Without a target, just the amount.
+function nutrientBar(n, totals, target, mini = false) {
+  const { total, missing } = totals[n.key];
+  const recorded = totals.count - missing > 0; // at least one meal that day recorded it
+  const el = document.createElement("div");
+  el.className = "nbar";
+  el.innerHTML = `<div class="nbar-top"><span></span><span class="nbar-val"></span></div>`;
+  el.querySelector("span").textContent = n.label;
+  const val = el.querySelector(".nbar-val");
+  val.textContent = recorded ? formatAmount(total, n.decimals) : "--";
+  const small = document.createElement("small");
+  if (target) {
+    const status = targetStatus(recorded ? total : 0, target);
+    const text = (target.kind === "limit" ? LIMIT_TEXT : STATUS_TEXT)[status]; // see targets-view.js
+    el.classList.add(status);
+    el.title = text.title;
+    const lead = target.kind === "limit" ? (mini ? "under " : " / under ") : mini ? "of " : " / ";
+    small.textContent = lead + targetAmount(target) + " " + n.unit;
+    small.className = "of";
+    const track = document.createElement("span");
+    track.className = "track";
+    const fill = document.createElement("span");
+    fill.className = `fill-${n.key}`;
+    fill.style.width = Math.min(100, ((recorded ? total : 0) / target.goal) * 100) + "%";
+    track.append(fill);
+    val.append(small);
+    el.append(track);
+  } else {
+    small.textContent = " " + n.unit;
+    if (recorded) val.append(small);
+  }
+  if (recorded && missing > 0) {
+    // Some meals skipped this nutrient, so the real total is higher than shown.
+    const note = document.createElement("span");
+    note.className = "partial";
+    note.textContent = `${missing} ${missing === 1 ? "meal" : "meals"} untracked`;
+    el.append(note);
+  }
+  return el;
 }
 
 // "P 42g · C 70g · F 18g", skipping any that weren't recorded
@@ -88,24 +139,26 @@ function macroSummary(meal) {
     .join(" · ");
 }
 
+// "12:40 PM", from when you logged it; nothing for a meal added on a later day
+function mealTime(meal) {
+  const at = new Date(meal.createdAt);
+  if (at.toLocaleDateString("en-CA") !== meal.date) return "";
+  return at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+// Tap a meal to edit or delete it.
 function renderMeals(meals) {
   const list = $("meals");
   list.innerHTML = "";
   $("meals-empty").hidden = meals.length > 0;
   meals.forEach((meal) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <div class="entry-main"><span class="meal-name"></span><span class="note"></span></div>
-      <span class="entry-value"></span>
-      <div class="entry-actions">
-        <button class="link" data-action="edit" type="button">Edit</button>
-        <button class="link" data-action="delete" type="button">Delete</button>
-      </div>`;
-    li.dataset.id = meal.id;
-    li.querySelector(".meal-name").textContent = meal.description; // textContent keeps user text safe
-    li.querySelector(".note").textContent = [macroSummary(meal), meal.notes].filter(Boolean).join(" — ");
-    li.querySelector(".entry-value").textContent = `${formatAmount(meal.calories, 0)} kcal`;
-    list.append(li);
+    list.append(listRow({
+      icon: "meal",
+      title: meal.description,
+      sub: [mealTime(meal), macroSummary(meal), meal.notes].filter(Boolean).join(" · "),
+      meta: `${formatAmount(meal.calories, 0)} kcal`,
+      open: () => openMealDialog(meal),
+    }));
   });
 }
 
@@ -115,6 +168,7 @@ function openMealDialog(meal) {
   nutrition.editingId = meal ? meal.id : null;
   $("meal-title").textContent = meal ? "Edit meal" : "Add meal";
   $("m-submit").textContent = meal ? "Update meal" : "Save meal";
+  $("m-delete").hidden = !meal;
   $("m-date").value = meal ? meal.date : nutrition.day;
   $("m-date").max = todayISO();
   $("m-description").value = meal?.description ?? "";
@@ -166,14 +220,12 @@ function setupNutrition() {
     await refreshInsights();
   });
 
-  // One listener for every Edit/Delete button in the list (event delegation).
-  $("meals").addEventListener("click", async (event) => {
-    const action = event.target.dataset.action;
-    const meal = nutrition.meals.find((m) => m.id === event.target.closest("li")?.dataset.id);
-    if (!action || !meal) return;
-    if (action === "edit") return openMealDialog(meal);
-    if (!confirm(`Delete "${meal.description}"?`)) return;
+  // Delete, from inside the edit dialog.
+  $("m-delete").addEventListener("click", async () => {
+    const meal = nutrition.meals.find((m) => m.id === nutrition.editingId);
+    if (!meal || !confirm(`Delete "${meal.description}"?`)) return;
     await db.deleteMeal(meal.id);
+    $("meal-dialog").close();
     await loadMealDay(nutrition.day);
     await loadTrends();
     await refreshInsights();

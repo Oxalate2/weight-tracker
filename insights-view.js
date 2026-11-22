@@ -77,6 +77,7 @@ function renderWeeks(weeks) {
     days.textContent = ` · ${w.loggedDays}d`;
     kcal.append(days);
     weight.textContent = w.change === null ? "--" : signed(w.change);
+    if (w.change !== null && Math.abs(w.change) >= 0.05) weight.classList.add(w.change < 0 ? "down" : "up");
     body.append(row);
   }
 }
@@ -92,8 +93,8 @@ function renderCalibration(est) {
   const kcal = (n) => formatAmount(n, 0);
   const diff = `${c.gap > 0 ? "+" : "−"}${kcal(Math.abs(c.gap))}`;
   $("i-cal-text").textContent = c.worthIt
-    ? `Your targets assume ≈ ${kcal(c.predicted)} kcal at ${c.weight.toFixed(1)} lb. Measured: ≈ ${kcal(c.measured)} (${diff}).`
-    : `Your targets assume ≈ ${kcal(c.predicted)} kcal at ${c.weight.toFixed(1)} lb, within ${CALIBRATE_MIN_GAP} kcal of what you measured. No change needed.`;
+    ? `Your targets assume ${kcal(c.predicted)} at ${c.weight.toFixed(1)} lb (${diff} off).`
+    : `Your targets assume ${kcal(c.predicted)} at ${c.weight.toFixed(1)} lb, within ${CALIBRATE_MIN_GAP} of this. No change needed.`;
   $("i-cal-btn").hidden = !c.worthIt;
   $("i-cal-btn").textContent = `Use ${kcal(c.measured)}`;
 }

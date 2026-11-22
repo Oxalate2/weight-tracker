@@ -14,6 +14,12 @@ function formatDate(iso) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+// "Nov 17"
+function shortDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 function progressPercent(start, current, goal) {
   if (start === goal) return 0;
   return Math.max(0, Math.min(100, ((start - current) / (start - goal)) * 100));
@@ -21,6 +27,50 @@ function progressPercent(start, current, goal) {
 
 function setText(name, value) {
   document.querySelectorAll(`[data-bind="${name}"]`).forEach((el) => (el.textContent = value));
+}
+
+// Inline icons for list rows (the same line style as the tab bar's)
+const ICON = {
+  meal: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  ruler: '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+  scale: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 9a5 5 0 0 1 8 0"/><path d="M12 9l1.5-2"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
+};
+const svgIcon = (name, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[name]}</svg>`;
+
+// One list row: icon, title, subtitle, and a value on the right. With `open`, the whole row is
+// a button that opens it for editing. Text goes in with textContent, so user text stays safe.
+function listRow({ icon, title, sub, meta, metaNote, metaNoteClass, open }) {
+  const li = document.createElement("li");
+  const row = document.createElement(open ? "button" : "div");
+  row.className = "row";
+  if (open) {
+    row.type = "button";
+    row.addEventListener("click", open);
+  }
+  row.innerHTML = `<span class="row-icon">${svgIcon(icon)}</span>
+    <span class="row-text"><span class="row-title"></span><span class="row-sub"></span></span>
+    <span class="row-meta"></span>`;
+  row.querySelector(".row-title").textContent = title;
+  const subEl = row.querySelector(".row-sub");
+  if (sub) subEl.textContent = sub; else subEl.remove();
+  const metaEl = row.querySelector(".row-meta");
+  metaEl.textContent = meta ?? "";
+  if (metaNote) {
+    const small = document.createElement("small");
+    small.textContent = metaNote;
+    if (metaNoteClass) small.className = metaNoteClass;
+    metaEl.append(small);
+  }
+  li.append(row);
+  return li;
+}
+
+// Fill a ring (see .ring in styles.css) to a fraction from 0 to 1.
+function setRing(el, fraction) {
+  const pct = Math.max(0, Math.min(1, fraction || 0)) * 100;
+  el.style.setProperty("--p", pct.toFixed(2));
+  el.toggleAttribute("data-empty", pct < 0.5);
 }
 
 function showError(id, message) {
@@ -31,9 +81,9 @@ function showError(id, message) {
 
 // ---------- Rendering ----------
 function trendLabel(perWeek) {
-  if (perWeek === null) return "Need more data";
+  if (perWeek === null) return "--";
   if (Math.abs(perWeek) < 0.2) return "Steady";
-  return `${perWeek < 0 ? "Down" : "Up"} ${Math.abs(perWeek).toFixed(1)} lb/wk`;
+  return signed(perWeek);
 }
 
 const sortedEntries = () => [...state.entries].sort((a, b) => a.date.localeCompare(b.date));
@@ -49,7 +99,11 @@ function render() {
   }
   renderEntries(entries);
   drawVisibleChart();
-  if (entries.length === 0) return;
+  if (entries.length === 0) {
+    setText("sinceStart", "No weigh-ins yet");
+    setText("remaining", "");
+    return;
+  }
 
   const today = dayNumber(todayISO());
   const latest = entries.at(-1);
@@ -59,51 +113,49 @@ function render() {
 
   setText("current", latest.weight.toFixed(1));
   const avg = averageWeightOn(entries, todayISO());
-  setText("todayWeightSub", (daysAgo === 0 ? "Logged today" : `Last weigh-in ${formatDate(latest.date)}`) +
-    (avg === null ? "" : ` · 7-day avg ${avg.toFixed(1)}`));
+  setText("todayWeightSub", (daysAgo === 0 ? "Logged today" : "Not logged today") +
+    (avg === null ? "" : ` · avg ${avg.toFixed(1)}`));
   setText("weekChange", week === null ? "--" : signed(week));
   setText("monthChange", month === null ? "--" : signed(month));
   setText("trend", trendLabel(trendPerWeek(entries, today)));
 
-  const sub = document.querySelector('[data-bind="weekDelta"]');
-  sub.classList.remove("down", "up");
-  if (daysAgo > 7) {
-    sub.textContent = `Last weigh-in ${daysAgo} days ago`;
-  } else if (week !== null) {
-    sub.textContent = `${week <= 0 ? "▼" : "▲"} ${Math.abs(round1(week)).toFixed(1)} lb this week`;
-    sub.classList.add(week < 0 ? "down" : "up");
-  } else {
-    sub.textContent = "Log more to see weekly change";
-  }
+  document.querySelectorAll('[data-bind="weekDelta"]').forEach((sub) => {
+    sub.classList.remove("down", "up");
+    if (daysAgo > 7) {
+      sub.textContent = `Last weigh-in ${daysAgo} days ago`;
+    } else if (week !== null) {
+      sub.textContent = `${week <= 0 ? "▼" : "▲"} ${Math.abs(round1(week)).toFixed(1)} lb this week`;
+      sub.classList.add(week < 0 ? "down" : "up");
+    } else {
+      sub.textContent = "Log more to see weekly change";
+    }
+  });
 
   if (goals) {
     const pct = progressPercent(goals.startWeight, latest.weight, goals.goalWeight);
-    setText("change", signed(latest.weight - goals.startWeight));
-    setText("remaining", Math.abs(round1(latest.weight - goals.goalWeight)).toFixed(1) + " lb");
-    setText("percent", Math.round(pct) + "% to goal");
-    $("progress-fill").style.width = pct + "%";
-    $("progress").setAttribute("aria-valuenow", Math.round(pct));
+    const since = round1(latest.weight - goals.startWeight);
+    setText("sinceStart", since === 0 ? "Same as when you started"
+      : `${since < 0 ? "Down" : "Up"} ${Math.abs(since).toFixed(1)} lb since you started`);
+    const left = round1(Math.abs(latest.weight - goals.goalWeight));
+    setText("remaining", pct >= 100 ? "Goal reached" : `${left.toFixed(1)} lb to go`);
+    setText("percent", Math.round(pct) + "%");
+    setRing($("goal-ring"), pct / 100);
+    $("goal-ring").setAttribute("aria-valuenow", Math.round(pct));
+  } else {
+    setText("sinceStart", "Set a goal in Settings");
   }
 }
 
+// The last 10 weigh-ins, newest first. Tap one to edit or delete it.
 function renderEntries(entries) {
   const list = $("entries");
   list.innerHTML = "";
   $("entries-empty").hidden = entries.length > 0;
   entries.slice(-10).reverse().forEach((e) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <div class="entry-main"><span class="date"></span><span class="note"></span></div>
-      <span class="entry-weight"></span>
-      <div class="entry-actions">
-        <button class="link" data-action="edit" type="button">Edit</button>
-        <button class="link" data-action="delete" type="button">Delete</button>
-      </div>`;
-    li.dataset.date = e.date;
-    li.querySelector(".date").textContent = formatDate(e.date); // textContent keeps user text safe
-    li.querySelector(".note").textContent = e.notes || "";
-    li.querySelector(".entry-weight").textContent = e.weight.toFixed(1) + " lb";
-    list.appendChild(li);
+    list.append(listRow({
+      icon: "scale", title: formatDate(e.date), sub: e.notes, meta: e.weight.toFixed(1) + " lb",
+      open: () => openEntryDialog(e),
+    }));
   });
 }
 
@@ -115,6 +167,7 @@ function openEntryDialog(entry = null) {
   $("f-submit").textContent = entry ? "Update entry" : "Save entry";
   $("f-date").value = entry ? entry.date : todayISO();
   $("f-date").disabled = Boolean(entry); // changing the date would create a different entry
+  $("f-delete").hidden = !entry;
   $("f-weight").value = entry?.weight ?? "";
   $("f-notes").value = entry?.notes ?? "";
   showError("form-error", "");
@@ -161,19 +214,13 @@ $("entry-form").addEventListener("submit", async (event) => {
 
 $("f-cancel").addEventListener("click", () => $("entry-dialog").close());
 
-// One listener on the list handles every Edit/Delete button (event delegation).
-$("entries").addEventListener("click", async (event) => {
-  const action = event.target.dataset.action;
-  const date = event.target.closest("li")?.dataset.date;
-  if (!action || !date) return;
-
-  if (action === "delete") {
-    if (!confirm(`Delete the entry for ${formatDate(date)}?`)) return;
-    await db.deleteEntry(date);
-    await entriesChanged();
-  } else {
-    openEntryDialog(state.entries.find((e) => e.date === date));
-  }
+// Delete, from inside the edit dialog.
+$("f-delete").addEventListener("click", async () => {
+  const date = state.editingDate;
+  if (!date || !confirm(`Delete the entry for ${formatDate(date)}?`)) return;
+  await db.deleteEntry(date);
+  $("entry-dialog").close();
+  await entriesChanged();
 });
 
 // ---------- Goals dialog ----------
@@ -205,9 +252,8 @@ function showTab(name) {
   state.tab = name;
   document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== name));
   document.querySelectorAll("#tabbar .tab").forEach((t) => {
-    if (t.dataset.tab !== name) return t.removeAttribute("aria-current");
-    t.setAttribute("aria-current", "page");
-    $("page-title").textContent = t.textContent; // the tab's own label
+    if (t.dataset.tab === name) t.setAttribute("aria-current", "page");
+    else t.removeAttribute("aria-current");
   });
   window.scrollTo(0, 0);
   drawVisibleChart();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#10151f">
+  <meta name="theme-color" content="#0b0f17">
   <title>Weight Tracker</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.webmanifest">
@@ -15,173 +15,226 @@
 </head>
 <body>
   <header class="topbar">
-    <h1 id="page-title">Today</h1>
-    <!-- Tab bar: at the bottom on phones, beside the title on wide screens (see styles.css) -->
+    <p class="brand">Weight Tracker</p>
+    <!-- Tab bar: a floating pill at the bottom on phones, in this header on wide screens (styles.css) -->
     <nav class="tabbar" id="tabbar" aria-label="Sections">
-      <button class="tab" type="button" data-tab="today"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>Today</span></button>
-      <button class="tab" type="button" data-tab="weight"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 9a5 5 0 0 1 8 0"/><path d="M12 9l1.5-2"/></svg><span>Weight</span></button>
-      <button class="tab" type="button" data-tab="trends"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Trends</span></button>
-      <button class="tab" type="button" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
+      <button class="tab" type="button" data-tab="today"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>Today</span></button>
+      <button class="tab" type="button" data-tab="weight"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 9a5 5 0 0 1 8 0"/><path d="M12 9l1.5-2"/></svg><span>Weight</span></button>
+      <button class="tab" type="button" data-tab="trends"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Trends</span></button>
+      <button class="tab" type="button" data-tab="settings"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
     </nav>
   </header>
 
   <main class="dashboard">
     <p class="error app-error" id="app-error" role="alert" hidden></p>
-    <!-- ===== Today: what you do every day ===== -->
-    <div class="panel panel-today" data-panel="today">
-      <section class="card today-weight" aria-labelledby="tw-label">
-        <div class="card-head">
-          <div>
-            <p class="label" id="tw-label">Weight</p>
-            <p class="tw-value"><span data-bind="current">--</span><span class="unit">lb</span></p>
-            <p class="label" data-bind="todayWeightSub">No weigh-ins yet</p>
-          </div>
-          <button class="btn primary" type="button" data-action="log-weight">Log weight</button>
-        </div>
-      </section>
 
-      <section class="card" aria-labelledby="nutrition-title">
-        <div class="card-head">
-          <h2 id="nutrition-title">Nutrition</h2>
-          <div class="day-nav">
-            <button class="chip" type="button" id="n-prev" aria-label="Previous day">‹</button>
-            <span id="n-day" aria-live="polite">Today</span>
-            <button class="chip" type="button" id="n-next" aria-label="Next day">›</button>
+    <!-- ===== Today: what you do every day ===== -->
+    <div class="panel" data-panel="today">
+      <header class="page-head">
+        <div>
+          <p class="eyebrow" id="n-date"></p>
+          <h1 id="n-day" aria-live="polite">Today</h1>
+        </div>
+        <div class="day-nav">
+          <button class="round-btn" type="button" id="n-prev" aria-label="Previous day"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="round-btn" type="button" id="n-next" aria-label="Next day"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </header>
+
+      <div class="cols">
+        <div class="col">
+          <section class="card cal-card" aria-label="Calories and macros">
+            <div class="ring ring-cal" id="cal-ring">
+              <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-track" cx="50" cy="50" r="45"/><circle class="ring-fill" cx="50" cy="50" r="45"/></svg>
+              <div class="ring-center"><span class="ring-num" id="cal-num">--</span><span class="ring-unit" id="cal-unit">kcal eaten</span></div>
+            </div>
+            <div class="macros">
+              <div class="nbars" id="n-macros"></div>
+              <p class="cal-sub" id="cal-sub"></p>
+            </div>
+          </section>
+          <button class="btn primary setup-btn" type="button" id="n-setup-btn" hidden>Set up your targets</button>
+
+          <div class="pair">
+            <section class="card tile" aria-labelledby="tw-label">
+              <div class="tile-top">
+                <p class="label" id="tw-label">Weight</p>
+                <button class="mini-btn" type="button" data-action="log-weight" aria-label="Log weight"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+              <p class="big"><span data-bind="current">--</span><small>lb</small></p>
+              <p class="delta" data-bind="weekDelta">No weigh-ins yet</p>
+              <p class="faint" data-bind="todayWeightSub"></p>
+            </section>
+            <section class="card tile" aria-label="Fiber and sodium">
+              <div class="nbars nbars-mini" id="n-extras"></div>
+            </section>
           </div>
+          <p class="footnote" id="n-targets-note" hidden></p>
         </div>
-        <div class="totals" id="n-totals"></div>
-        <p class="targets-note" id="n-targets-note" hidden></p>
-        <button class="btn setup-btn" type="button" id="n-setup-btn" hidden>Set up your targets</button>
-        <ul class="entries" id="meals"></ul>
-        <p class="empty" id="meals-empty">No meals logged for this day.</p>
-        <div class="actions">
-          <button class="btn primary" type="button" id="add-meal-btn">Add meal</button>
+
+        <div class="col">
+          <div class="section-head">
+            <h2>Meals</h2>
+            <button class="pill" type="button" id="add-meal-btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add meal</button>
+          </div>
+          <section class="card list-card">
+            <ul class="rows" id="meals"></ul>
+            <p class="empty" id="meals-empty">No meals logged for this day.</p>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
 
     <!-- ===== Weight: progress and history ===== -->
     <div class="panel" data-panel="weight" hidden>
-      <section class="card hero" aria-labelledby="hero-label">
-        <div class="card-head hero-head">
-          <p class="label" id="hero-label">Current weight</p>
-          <button class="btn primary" type="button" data-action="log-weight">Log weight</button>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow" data-bind="sinceStart"></p>
+          <h1>Weight</h1>
         </div>
-        <p class="hero-value"><span data-bind="current">--</span><span class="unit">lb</span></p>
-        <p class="hero-sub" data-bind="weekDelta">No weigh-ins yet</p>
-        <div class="progress" role="progressbar" aria-label="Progress to goal"
-             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress">
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
-        <div class="progress-meta">
-          <span>Start <b data-bind="start">--</b></span>
-          <span><span data-bind="percent">0% to goal</span> · <span data-bind="remaining">--</span> left</span>
-          <span>Goal <b data-bind="goal">--</b></span>
-        </div>
-      </section>
+      </header>
 
-      <section class="stats" aria-label="Overview">
-        <div class="card stat"><p class="label">This week</p><p class="stat-value" data-bind="weekChange">--</p></div>
-        <div class="card stat"><p class="label">This month</p><p class="stat-value" data-bind="monthChange">--</p></div>
-        <div class="card stat"><p class="label">Trend (4 weeks)</p><p class="stat-value" data-bind="trend">--</p></div>
-      </section>
+      <div class="cols">
+        <div class="col">
+          <section class="card goal-card" aria-label="Progress to goal">
+            <div class="ring ring-goal" id="goal-ring" role="progressbar" aria-label="Progress to goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-track" cx="50" cy="50" r="45"/><circle class="ring-fill" cx="50" cy="50" r="45"/></svg>
+              <div class="ring-center"><span class="ring-num" data-bind="percent">--</span><span class="ring-unit">to goal</span></div>
+            </div>
+            <div class="goal-side">
+              <div class="tile-top">
+                <p class="label">Current</p>
+                <button class="mini-btn" type="button" data-action="log-weight" aria-label="Log weight"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+              <p class="big"><span data-bind="current">--</span><small>lb</small></p>
+              <p class="goal-ends"><span>Start <b data-bind="start">--</b></span><span>Goal <b data-bind="goal">--</b></span></p>
+              <p class="delta down" data-bind="remaining"></p>
+            </div>
+          </section>
 
-      <section class="card chart-card" aria-labelledby="chart-title">
-        <div class="card-head">
-          <h2 id="chart-title">History</h2>
-          <div class="ranges" role="group" aria-label="Time range" id="ranges"><button class="chip" type="button" data-range="7D">7D</button><button class="chip" type="button" data-range="30D">30D</button><button class="chip" type="button" data-range="90D">90D</button><button class="chip" type="button" data-range="6M">6M</button><button class="chip" type="button" data-range="1Y">1Y</button><button class="chip" type="button" data-range="All">All</button></div>
-        </div>
-        <div class="chart-wrap"><canvas id="chart-canvas" aria-label="Weight history chart" role="img"></canvas></div>
-        <div class="chart-empty" id="chart-empty" hidden>No entries in this range</div>
-      </section>
+          <section class="card chart-card" aria-labelledby="chart-title">
+            <div class="card-head">
+              <h2 id="chart-title">History</h2>
+              <div class="seg" role="group" aria-label="Time range" id="ranges"><button class="chip" type="button" data-range="7D">7D</button><button class="chip" type="button" data-range="30D">30D</button><button class="chip" type="button" data-range="90D">90D</button><button class="chip" type="button" data-range="6M">6M</button><button class="chip" type="button" data-range="1Y">1Y</button><button class="chip" type="button" data-range="All">All</button></div>
+            </div>
+            <div class="chart-wrap"><canvas id="chart-canvas" aria-label="Weight history chart" role="img"></canvas></div>
+            <div class="chart-empty" id="chart-empty" hidden>No entries in this range</div>
+          </section>
 
-      <section class="card" aria-labelledby="measure-title">
-        <div class="card-head">
-          <h2 id="measure-title">Measurements</h2>
-          <button class="btn" type="button" id="measure-btn">Log measurements</button>
+          <section class="stats" aria-label="Overview">
+            <div class="card stat"><p class="label">This week</p><p class="stat-value" data-bind="weekChange">--</p></div>
+            <div class="card stat"><p class="label">This month</p><p class="stat-value" data-bind="monthChange">--</p></div>
+            <div class="card stat"><p class="label">Per week</p><p class="stat-value" data-bind="trend" title="Trend over the last 4 weeks">--</p></div>
+          </section>
         </div>
-        <p class="measure-due" id="measure-due" role="status" hidden></p>
-        <div class="totals measure-latest" id="measure-latest" hidden></div>
-        <div id="measure-chart-area" hidden>
-          <div class="trend-toolbar"><select id="measure-site" aria-label="Body part to chart"></select></div>
-          <div class="chart-wrap trend-wrap"><canvas id="measure-canvas" aria-label="Measurement history chart" role="img"></canvas></div>
-          <div class="chart-empty trend-wrap" id="measure-chart-empty" hidden></div>
-        </div>
-        <ul class="entries" id="measure-list"></ul>
-        <p class="empty" id="measure-empty">No measurements yet. Every 2 weeks is plenty: your waist changes slowly, so more often mostly shows tape noise.</p>
-      </section>
 
-      <section class="card" aria-labelledby="recent-title">
-        <div class="card-head"><h2 id="recent-title">Recent entries</h2></div>
-        <ul class="entries" id="entries"></ul>
-        <p class="empty" id="entries-empty">No entries yet. Tap Log weight to add your first weigh-in.</p>
-      </section>
+        <div class="col">
+          <div class="section-head">
+            <h2 id="measure-title">Measurements</h2>
+            <button class="link" type="button" id="measure-btn">Log</button>
+          </div>
+          <p class="due" id="measure-due" role="status" hidden></p>
+          <section class="card list-card" aria-labelledby="measure-title">
+            <ul class="rows" id="measure-latest" hidden></ul>
+            <p class="empty" id="measure-empty">No measurements yet. Every 2 weeks is plenty: your waist changes slowly, so more often mostly shows tape noise.</p>
+          </section>
+          <section class="card chart-card" id="measure-chart-area" aria-label="Measurement history" hidden>
+            <div class="card-head">
+              <h2>Measurement history</h2>
+              <select id="measure-site" aria-label="Body part to chart"></select>
+            </div>
+            <div class="chart-wrap short"><canvas id="measure-canvas" aria-label="Measurement history chart" role="img"></canvas></div>
+            <div class="chart-empty short" id="measure-chart-empty" hidden></div>
+            <ul class="rows rows-flush" id="measure-list"></ul>
+          </section>
+
+          <div class="section-head"><h2 id="recent-title">Weigh-ins</h2></div>
+          <section class="card list-card" aria-labelledby="recent-title">
+            <ul class="rows" id="entries"></ul>
+            <p class="empty" id="entries-empty">No entries yet. Tap + to add your first weigh-in.</p>
+          </section>
+        </div>
+      </div>
     </div>
 
     <!-- ===== Trends: patterns over weeks ===== -->
     <div class="panel" data-panel="trends" hidden>
-      <section class="card" aria-labelledby="trends-title">
-        <div class="card-head"><h2 id="trends-title">Nutrition trends</h2></div>
-        <div class="trend-toolbar">
-          <select id="t-nutrient" aria-label="Nutrient to chart"></select>
-          <div class="ranges" role="group" aria-label="Trend range" id="t-ranges"><button class="chip" type="button" data-range="7D">7D</button><button class="chip" type="button" data-range="30D">30D</button><button class="chip" type="button" data-range="90D">90D</button></div>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow" id="t-eyebrow">Last 30 days</p>
+          <h1>Trends</h1>
         </div>
-        <div class="chart-wrap trend-wrap"><canvas id="trend-canvas" aria-label="Daily nutrition chart" role="img"></canvas></div>
-        <div class="chart-empty trend-wrap" id="trend-empty" hidden></div>
-        <p class="trend-note" id="trend-note" hidden></p>
-        <div class="trend-stats" id="t-stats"></div>
-      </section>
+        <div class="seg" role="group" aria-label="Trend range" id="t-ranges"><button class="chip" type="button" data-range="7D">7D</button><button class="chip" type="button" data-range="30D">30D</button><button class="chip" type="button" data-range="90D">90D</button></div>
+      </header>
 
-      <section class="card" aria-labelledby="insights-title">
-        <div class="card-head"><h2 id="insights-title">Weight vs. nutrition</h2></div>
-        <p class="label">Estimated maintenance</p>
-        <p class="insight-value" id="i-value">--</p>
-        <p class="insight-detail" id="i-detail"></p>
-        <div class="calibrate" id="i-calibrate" hidden>
-          <p id="i-cal-text"></p>
-          <button class="btn" type="button" id="i-cal-btn" hidden></button>
+      <div class="cols">
+        <div class="col">
+          <section class="card chart-card" aria-label="Nutrition trends">
+            <div class="chips" role="group" aria-label="Nutrient to chart" id="t-nutrient"></div>
+            <p class="kpi" id="t-kpi"></p>
+            <div class="chart-wrap short"><canvas id="trend-canvas" aria-label="Daily nutrition chart" role="img"></canvas></div>
+            <div class="chart-empty short" id="trend-empty" hidden></div>
+            <p class="footnote" id="trend-note" hidden></p>
+          </section>
         </div>
-        <table class="weeks">
-          <thead><tr><th scope="col">Week</th><th scope="col" class="num">Avg kcal</th><th scope="col" class="num">Weight</th></tr></thead>
-          <tbody id="i-weeks"></tbody>
-        </table>
-        <p class="trend-note">A rough guide, not a measurement: it assumes about 3,500 kcal per lb and that days you didn't log look like days you did.</p>
-      </section>
+
+        <div class="col">
+          <section class="card maint-card" aria-labelledby="insights-title">
+            <p class="label" id="insights-title">Measured maintenance</p>
+            <p class="huge" id="i-value">--</p>
+            <p class="body" id="i-detail"></p>
+            <div class="callout" id="i-calibrate" hidden>
+              <p id="i-cal-text"></p>
+              <button class="pill" type="button" id="i-cal-btn" hidden></button>
+            </div>
+          </section>
+          <section class="card table-card" aria-label="Weekly summary">
+            <table class="weeks">
+              <thead><tr><th scope="col">Week</th><th scope="col" class="num">Avg kcal</th><th scope="col" class="num">Weight</th></tr></thead>
+              <tbody id="i-weeks"></tbody>
+            </table>
+          </section>
+          <p class="footnote">A rough guide, not a measurement: it assumes about 3,500 kcal per lb and that days you didn't log look like days you did.</p>
+        </div>
+      </div>
     </div>
 
     <!-- ===== Settings: set once, rarely touched ===== -->
-    <div class="panel" data-panel="settings" hidden>
-      <section class="card" aria-labelledby="goal-title">
-        <div class="card-head setting">
-          <div>
-            <h2 id="goal-title">Goal weight</h2>
-            <p class="label"><span data-bind="start">--</span> → <span data-bind="goal">--</span> lb</p>
-          </div>
-          <button class="btn" type="button" id="goals-btn">Edit</button>
-        </div>
-      </section>
+    <div class="panel panel-narrow" data-panel="settings" hidden>
+      <header class="page-head"><div><p class="eyebrow"></p><h1>Settings</h1></div></header>
 
-      <section class="card" aria-labelledby="targets-title">
-        <div class="card-head setting">
-          <div>
-            <h2 id="targets-title">Eating targets</h2>
-            <p class="label" id="targets-summary">Not set up yet</p>
-            <p class="targets-default-note" id="targets-default-note" hidden>Your TDEE is still the app's built-in starting number, not one worked out for you. Use Edit → Recalculate from my stats.</p>
-          </div>
-          <button class="btn" type="button" id="targets-btn">Edit</button>
-        </div>
+      <section class="card list-card">
+        <ul class="rows">
+          <li><button class="row" type="button" id="stats-btn">
+            <span class="row-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+            <span class="row-text"><span class="row-title">Your stats</span><span class="row-sub" id="stats-summary">Not entered yet</span></span>
+            <svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button></li>
+          <li><button class="row" type="button" id="goals-btn">
+            <span class="row-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+            <span class="row-text"><span class="row-title">Goal weight</span><span class="row-sub"><span data-bind="start">--</span> → <span data-bind="goal">--</span> lb</span></span>
+            <svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button></li>
+          <li><button class="row" type="button" id="targets-btn">
+            <span class="row-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg></span>
+            <span class="row-text"><span class="row-title">Eating targets</span><span class="row-sub" id="targets-summary">Not set up yet</span></span>
+            <svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button></li>
+        </ul>
       </section>
+      <p class="due" id="targets-default-note" hidden>Your TDEE is still the app's built-in starting number, not one worked out for you. Open Your stats to work it out.</p>
 
-      <section class="card" aria-labelledby="data-title">
-        <div class="card-head"><h2 id="data-title">Backup</h2></div>
-        <p class="empty" id="backup-status">No backup yet.</p>
+      <div class="section-head"><h2 id="data-title">Backup</h2></div>
+      <section class="card pad-card" aria-labelledby="data-title">
+        <p class="body" id="backup-status">No backup yet.</p>
         <div class="actions">
-          <button class="btn primary" type="button" id="export-btn">Export backup</button>
-          <button class="btn" type="button" id="import-btn">Import backup</button>
+          <button class="btn primary" type="button" id="export-btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export</button>
+          <button class="btn" type="button" id="import-btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>Import</button>
           <input type="file" id="import-file" accept="application/json,.json" hidden>
         </div>
         <p class="error" id="backup-msg" role="status" hidden></p>
       </section>
+      <p class="footnote">Your data lives only on this device. A backup is the only copy anywhere else.</p>
     </div>
   </main>
 
@@ -197,6 +250,7 @@
       <div class="actions">
         <button class="btn primary" type="submit" id="f-submit">Save entry</button>
         <button class="btn" type="button" id="f-cancel">Cancel</button>
+        <button class="btn danger" type="button" id="f-delete" hidden>Delete</button>
       </div>
     </form>
   </dialog>
@@ -296,6 +350,7 @@
       <div class="actions">
         <button class="btn primary" type="submit">Save measurements</button>
         <button class="btn" type="button" id="ms-cancel">Cancel</button>
+        <button class="btn danger" type="button" id="ms-delete" hidden>Delete</button>
       </div>
     </form>
   </dialog>
@@ -318,6 +373,7 @@
       <div class="actions">
         <button class="btn primary" type="submit" id="m-submit">Save meal</button>
         <button class="btn" type="button" id="m-cancel">Cancel</button>
+        <button class="btn danger" type="button" id="m-delete" hidden>Delete</button>
       </div>
     </form>
   </dialog>

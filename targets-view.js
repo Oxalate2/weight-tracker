@@ -1,5 +1,5 @@
 // Page code for your eating targets: loading the settings, the Settings-tab summary and edit
-// dialog, and targetLine(), which the Nutrition card uses under each nutrient.
+// dialog, and the target wording (targetAmount, STATUS_TEXT) the Today tab's bars use.
 // The maths is in targets.js. Like the other view files, this uses helpers from other files
 // ($, showError, todayISO, formatAmount, state) only inside functions that run after startup.
 
@@ -51,31 +51,21 @@ const LIMIT_TEXT = {
   over: { suffix: " · over", title: "Over your daily limit" },
 };
 
-// "of 144–180 ✓" or "limit 2,000", plus a thin bar in the nutrient's own color (styles.css).
-function targetLine(key, target, total) {
-  const status = targetStatus(total, target);
-  const text = (target.kind === "limit" ? LIMIT_TEXT : STATUS_TEXT)[status];
-  const line = document.createElement("p");
-  line.className = "target " + status;
-  line.textContent = (target.kind === "limit" ? "limit " : "of ") + targetAmount(target) + text.suffix;
-  line.title = text.title;
-  const bar = document.createElement("div");
-  bar.className = "tbar";
-  const fill = document.createElement("div");
-  fill.className = `tbar-fill fill-${key}`;
-  fill.style.width = Math.min(100, (total / target.goal) * 100) + "%";
-  bar.append(fill);
-  return [line, bar];
-}
-
-// One line on the Settings tab: what your targets are set to.
+// The Settings rows' summaries: your stats and what your targets are set to.
 function renderTargetsSummary() {
   const t = targetSettings;
   $("targets-default-note").hidden = !t || !isOldDefault(t, targetProfile);
   $("targets-summary").textContent = !t ? "Not set up yet" :
-    `TDEE ${formatAmount(t.tdee, 0)} kcal` + (t.deficit ? ` − ${formatAmount(t.deficit, 0)}` : "") +
-    ` · fat ${t.fatPerLb} g/lb · protein ${t.proteinLow}–${t.proteinHigh} g/lb` +
-    ` · fiber ${t.fiberLow}–${t.fiberHigh} g · sodium ≤ ${formatAmount(t.sodiumLimit, 0)} mg`;
+    `TDEE ${formatAmount(t.tdee, 0)}` + (t.deficit ? ` − ${formatAmount(t.deficit, 0)}` : "") +
+    ` · protein ${t.proteinLow}–${t.proteinHigh} g/lb · fat ${t.fatPerLb} g/lb`;
+  const p = targetProfile;
+  const activity = ACTIVITY_LEVELS.find((a) => a.key === p?.activity);
+  $("stats-summary").textContent = !p ? "Not entered yet" : [
+    p.sex === "male" ? "Male" : "Female",
+    ageIn(p, thisYear()),
+    `${Math.floor(p.heightIn / 12)}′${Math.round((p.heightIn % 12) * 10) / 10}″`,
+    activity ? activity.label.split(":")[0] : "",
+  ].filter(Boolean).join(" · ");
 }
 
 // ---------- Targets dialog ----------
@@ -164,6 +154,7 @@ function setupTargets() {
   $("targets-btn").addEventListener("click", openTargetsDialog);
   for (const a of ACTIVITY_LEVELS) $("su-activity").add(new Option(a.label, a.key));
   $("n-setup-btn").addEventListener("click", openSetupDialog);
+  $("stats-btn").addEventListener("click", openSetupDialog);
   $("tg-recalc").addEventListener("click", () => {
     $("targets-dialog").close();
     openSetupDialog();

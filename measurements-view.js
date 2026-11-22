@@ -41,20 +41,18 @@ function inchChange(n) {
   return (n > 0 ? "+" : "−") + formatInches(Math.abs(n)) + "″";
 }
 
+// One row per body part: the latest value and the change since your first measurement.
 function renderMeasureLatest(progress) {
   const box = $("measure-latest");
   box.innerHTML = "";
   box.hidden = progress.length === 0;
   for (const p of progress) {
-    const cell = document.createElement("div");
-    cell.className = "total";
-    cell.innerHTML = `<p class="label"></p><p class="total-value"></p><span class="measure-change"></span>`;
-    cell.querySelector(".label").textContent = p.label;
-    cell.querySelector(".total-value").textContent = formatInches(p.latest) + "″";
-    const change = cell.querySelector(".measure-change");
-    change.textContent = inchChange(p.change) + " since first";
-    change.title = `Latest: ${formatDate(p.latestDate)}`;
-    box.append(cell);
+    const flat = Math.abs(p.change) < 0.005;
+    box.append(listRow({
+      icon: "ruler", title: p.label, sub: `Measured ${shortDate(p.latestDate)}`,
+      meta: formatInches(p.latest) + "″", metaNote: inchChange(p.change), // change since your first measurement
+      metaNoteClass: flat ? "" : p.change < 0 ? "down" : "up",
+    }));
   }
 }
 
@@ -71,22 +69,15 @@ function measureSummary(m) {
   return MEASURE_SITES.filter((s) => m[s.key] !== null).map((s) => `${s.label} ${formatInches(m[s.key])}″`).join(" · ");
 }
 
+// Past sets, newest first. Tap one to edit or delete it.
 function renderMeasureList() {
   const list = $("measure-list");
   list.innerHTML = "";
   sortedMeasurements().slice(-10).reverse().forEach((m) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <div class="entry-main"><span class="date"></span><span class="measure-values"></span><span class="note"></span></div>
-      <div class="entry-actions">
-        <button class="link" data-action="edit" type="button">Edit</button>
-        <button class="link" data-action="delete" type="button">Delete</button>
-      </div>`;
-    li.dataset.date = m.date;
-    li.querySelector(".date").textContent = formatDate(m.date); // textContent keeps user text safe
-    li.querySelector(".measure-values").textContent = measureSummary(m);
-    li.querySelector(".note").textContent = m.notes || "";
-    list.append(li);
+    list.append(listRow({
+      icon: "ruler", title: formatDate(m.date), sub: [measureSummary(m), m.notes].filter(Boolean).join(" · "),
+      open: () => openMeasureDialog(m),
+    }));
   });
 }
 
@@ -174,6 +165,7 @@ function openMeasureDialog(record = null) {
   $("measure-form-title").textContent = record ? "Edit measurements" : "Log measurements";
   $("ms-date").value = record ? record.date : todayISO();
   $("ms-date").disabled = Boolean(record); // changing the date would make a different record
+  $("ms-delete").hidden = !record;
   for (const s of MEASURE_SITES) $(`ms-${s.key}`).value = record?.[s.key] ?? "";
   $("ms-notes").value = record?.notes ?? "";
   showError("measure-error", "");
@@ -223,16 +215,12 @@ function setupMeasurements() {
     await measurementsChanged();
   });
 
-  $("measure-list").addEventListener("click", async (event) => {
-    const action = event.target.dataset.action;
-    const date = event.target.closest("li")?.dataset.date;
-    if (!action || !date) return;
-    if (action === "delete") {
-      if (!confirm(`Delete the measurements for ${formatDate(date)}?`)) return;
-      await db.deleteMeasurement(date);
-      await measurementsChanged();
-    } else {
-      openMeasureDialog(measurements.find((m) => m.date === date));
-    }
+  // Delete, from inside the edit dialog.
+  $("ms-delete").addEventListener("click", async () => {
+    const date = editingMeasureDate;
+    if (!date || !confirm(`Delete the measurements for ${formatDate(date)}?`)) return;
+    await db.deleteMeasurement(date);
+    $("measure-dialog").close();
+    await measurementsChanged();
   });
 }

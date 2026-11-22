@@ -1,4 +1,4 @@
-// Draws the Nutrition trends card: a bar per day for one nutrient, plus average tiles.
+// Draws the Nutrition trends card: a bar per day for one nutrient, and its daily average.
 // Like nutrition-view.js, it uses helpers from other files ($, todayISO, plural, cssVar,
 // axisDate, evenDateTicks, tickDecimals) only inside functions that run after startup.
 
@@ -16,12 +16,14 @@ async function loadTrends() {
 function renderTrends() {
   if (!trends.start) return; // not loaded yet (see loadTrends)
   document.querySelectorAll("#t-ranges .chip").forEach((c) => c.classList.toggle("is-active", c.dataset.range === trends.range));
+  document.querySelectorAll("#t-nutrient .chip").forEach((c) => c.classList.toggle("is-active", c.dataset.key === trends.key));
+  $("t-eyebrow").textContent = `Last ${RANGE_DAYS[trends.range]} days`;
   const nutrient = NUTRIENTS.find((n) => n.key === trends.key);
   const series = dailySeries(trends.meals, trends.start, trends.today, trends.key);
   const { average, days } = averageOf(series, trends.today);
   renderTrendChart(series, nutrient, average);
   renderTrendNote(series, nutrient, average, days);
-  renderTrendStats();
+  renderTrendKpi(nutrient, average, days);
 }
 
 // A sentence under the chart that explains the colors actually on screen.
@@ -34,32 +36,17 @@ function renderTrendNote(series, nutrient, average, days) {
   $("trend-note").hidden = parts.length === 0;
 }
 
-function renderTrendStats() {
-  const grid = $("t-stats");
-  grid.innerHTML = "";
-  const addTile = (label, value, unit, sub) => {
-    const tile = document.createElement("div");
-    tile.className = "total";
-    tile.innerHTML = `<p class="label"></p><p class="total-value"></p><span class="sub"></span>`;
-    tile.querySelector(".label").textContent = label;
-    tile.querySelector(".total-value").textContent = value;
-    if (unit) {
-      const small = document.createElement("small");
-      small.textContent = unit;
-      tile.querySelector(".total-value").append(small);
-    }
-    tile.querySelector(".sub").textContent = sub;
-    grid.append(tile);
-  };
-
-  for (const key of ["calories", "protein", "carbs", "fat"]) {
-    const n = NUTRIENTS.find((x) => x.key === key);
-    const { average, days } = averageOf(dailySeries(trends.meals, trends.start, trends.today, key), trends.today);
-    if (average === null) addTile(`Avg ${n.label.toLowerCase()}`, "--", "", "no complete days");
-    else addTile(`Avg ${n.label.toLowerCase()}`, formatAmount(average, 0), n.unit, plural(days, "day"));
-  }
+// "2,300 kcal a day on average · 21 of 30 days logged", for the chosen nutrient.
+function renderTrendKpi(nutrient, average, days) {
+  const kpi = $("t-kpi");
+  kpi.innerHTML = `<span class="big"></span><span class="label"></span>`;
   const logged = new Set(trends.meals.map((m) => m.date)).size;
-  addTile("Logged", `${logged}/${RANGE_DAYS[trends.range]}`, "", "days with meals");
+  const loggedText = `${logged} of ${RANGE_DAYS[trends.range]} days logged`;
+  const what = nutrient.key === "calories" ? "kcal" : `${nutrient.unit} ${nutrient.label.toLowerCase()}`;
+  kpi.firstChild.textContent = average === null ? "--" : formatAmount(average, 0);
+  kpi.lastChild.textContent = average === null
+    ? `No complete days yet · ${loggedText}`
+    : `${what} a day on average · ${loggedText}`;
 }
 
 function renderTrendChart(series, nutrient, average) {
@@ -149,7 +136,7 @@ function renderTrendChart(series, nutrient, average) {
           bodyColor: cssVar("--text"),
           padding: 10,
           cornerRadius: 10,
-          // Only the bars get tooltips; the average already shows in the tiles below.
+          // Only the bars get tooltips; the average already shows above the chart.
           filter: (item) => item.dataset.type === "bar",
           displayColors: false,
           callbacks: {
@@ -171,11 +158,19 @@ function renderTrendChart(series, nutrient, average) {
 
 // ---------- Event listeners (attached once, from app.js startup) ----------
 function setupTrends() {
-  const select = $("t-nutrient");
-  for (const n of NUTRIENTS) select.add(new Option(n.label, n.key));
-  select.value = trends.key;
-  select.addEventListener("change", () => {
-    trends.key = select.value;
+  const chips = $("t-nutrient");
+  for (const n of NUTRIENTS) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.dataset.key = n.key;
+    chip.textContent = n.label;
+    chips.append(chip);
+  }
+  chips.addEventListener("click", (event) => {
+    const key = event.target.closest(".chip")?.dataset.key;
+    if (!key || key === trends.key) return;
+    trends.key = key;
     renderTrends(); // same meals, different nutrient: no need to ask the database again
   });
   $("t-ranges").addEventListener("click", (event) => {
