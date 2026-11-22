@@ -11,17 +11,22 @@
 
 const KCAL_PER_G = { protein: 4, carbs: 4, fat: 9 };
 
-// Your starting settings. tdeeWeight is filled in with your 7-day average the first time.
-// 2,810 is halfway between the calculator's 5'7" (2,799) and 5'8" (2,824) results.
-// 7 kcal per lb: those two results differ by 25 kcal per inch, which fits the Mifflin-St Jeor
-// formula with a "moderately active" multiplier (~1.55); in that formula each lb is worth
-// 4.5 kcal of BMR, × 1.55 ≈ 7 kcal of TDEE.
+// Everything but your TDEE starts here. Your TDEE, the weight it was worked out at, and how much
+// it changes per lb come from your stats instead (see startingTdee below), so they aren't set here.
 // Fiber and sodium don't depend on weight: fiber aims for 30-38 g with 25 g as the floor,
 // and sodium is a daily limit (2,000 mg for now; lower it in the dialog when that's easy).
 const TARGET_DEFAULTS = {
-  tdee: 2810, tdeeWeight: null, kcalPerLb: 7, deficit: 0, fatPerLb: 0.3, proteinLow: 0.8, proteinHigh: 1.0,
+  deficit: 0, fatPerLb: 0.3, proteinLow: 0.8, proteinHigh: 1.0,
   fiberFloor: 25, fiberLow: 30, fiberHigh: 38, sodiumLimit: 2000,
 };
+
+// Before the setup from your stats existed, everyone started at this TDEE (the app's first
+// user's calculator result) with 7 kcal/lb. Settings still exactly at it, with no stats saved,
+// were never set for you, so the Settings tab suggests setting them up from your stats.
+const OLD_DEFAULT_TDEE = 2810;
+const OLD_DEFAULT_KCAL_PER_LB = 7;
+const isOldDefault = (settings, profile) =>
+  !profile && settings.tdee === OLD_DEFAULT_TDEE && settings.kcalPerLb === OLD_DEFAULT_KCAL_PER_LB;
 
 // Allowed range for each setting, used by the dialog and by backup import.
 const TARGET_FIELDS = [
@@ -123,4 +128,72 @@ function compareMaintenance(settings, est) {
 // Returns { settings } or { error }, through the same checks as the targets dialog.
 function calibratedTargets(settings, est) {
   return validateTargets({ ...settings, tdee: est.maintenance, tdeeWeight: Math.round(est.avgWeight * 10) / 10 });
+}
+
+// ---------- Your starting TDEE, from your stats ----------
+// The Mifflin-St Jeor formula, the one most TDEE calculators use:
+//   BMR  = 10 × kg + 6.25 × cm − 5 × age, then +5 for men or −161 for women
+//   TDEE = BMR × your activity level's multiplier
+// It's a starting guess (usually within ~10%). After about 4 weeks of logging, the Trends tab
+// measures your real maintenance and offers to replace it (see compareMaintenance above).
+const ACTIVITY_LEVELS = [
+  { key: "sedentary", label: "Sedentary: desk job, little exercise", multiplier: 1.2 },
+  { key: "light", label: "Light: exercise 1–3 days a week", multiplier: 1.375 },
+  { key: "moderate", label: "Moderate: exercise 3–5 days a week", multiplier: 1.55 },
+  { key: "very", label: "Very active: hard exercise 6–7 days a week", multiplier: 1.725 },
+  { key: "extra", label: "Extra active: physical job plus training", multiplier: 1.9 },
+];
+const KG_PER_LB = 0.45359237;
+const PROFILE_AGE = [18, 100]; // the formula is for adults
+const PROFILE_HEIGHT = [48, 90]; // inches: 4'0" to 7'6"
+
+// Your stats: { sex: "male" | "female", birthYear, heightIn, activity }. Saved as a birth year,
+// not an age, so your age stays right as years go by.
+const ageIn = (profile, year) => year - profile.birthYear;
+
+// Form values ({ sex, age, heightIn, activity }) or a saved/backup profile
+// ({ sex, birthYear, heightIn, activity }) in, { profile } or { error } out. heightIn is your
+// total height in inches (the dialog adds up feet and inches).
+// `year` is this year, from the caller, so this stays free of clocks.
+function validateProfile(raw, year) {
+  if (!raw || typeof raw !== "object") return { error: "Your stats are unreadable." };
+  if (raw.sex !== "male" && raw.sex !== "female") return { error: "Choose male or female for the formula." };
+  const num = (v) => (typeof v === "string" ? (v.trim() === "" ? NaN : Number(v)) : typeof v === "number" ? v : NaN);
+  let birthYear;
+  if (raw.birthYear !== undefined) {
+    birthYear = num(raw.birthYear);
+    if (!Number.isInteger(birthYear)) return { error: "Your stats have an unreadable birth year." };
+  } else {
+    const age = num(raw.age);
+    if (!Number.isFinite(age)) return { error: "Enter your age." };
+    birthYear = year - Math.round(age);
+  }
+  const age = year - birthYear;
+  if (age < PROFILE_AGE[0] || age > PROFILE_AGE[1]) return { error: `Age should be between ${PROFILE_AGE[0]} and ${PROFILE_AGE[1]}.` };
+  const heightIn = Math.round(num(raw.heightIn) * 10) / 10;
+  if (!Number.isFinite(heightIn)) return { error: "Enter your height." };
+  if (heightIn < PROFILE_HEIGHT[0] || heightIn > PROFILE_HEIGHT[1]) return { error: "Height should be between 4'0\" and 7'6\"." };
+  if (!ACTIVITY_LEVELS.some((a) => a.key === raw.activity)) return { error: "Choose an activity level." };
+  return { profile: { sex: raw.sex, birthYear, heightIn, activity: raw.activity } };
+}
+
+// Your TDEE at `weight` (lb) and how much it changes per lb, from your stats.
+// Per lb: the formula adds 10 kcal of BMR per kg, so 10 × 0.4536 ≈ 4.54 kcal per lb, times your
+// activity multiplier (7.0 at "moderate"). Returns { tdee, kcalPerLb, bmr }.
+function startingTdee(profile, weight, year) {
+  const activity = ACTIVITY_LEVELS.find((a) => a.key === profile.activity);
+  const bmr = 10 * weight * KG_PER_LB + 6.25 * profile.heightIn * 2.54 - 5 * ageIn(profile, year) +
+    (profile.sex === "male" ? 5 : -161);
+  return {
+    bmr: Math.round(bmr),
+    tdee: Math.round((bmr * activity.multiplier) / 10) * 10,
+    kcalPerLb: Math.round(10 * KG_PER_LB * activity.multiplier * 10) / 10,
+  };
+}
+
+// Your targets from your stats: the TDEE above at `weight`, with your other settings kept
+// (or the defaults the first time). Returns { settings } or { error }, via validateTargets.
+function targetsFromProfile(profile, weight, deficit, current, year) {
+  const { tdee, kcalPerLb } = startingTdee(profile, weight, year);
+  return validateTargets({ ...TARGET_DEFAULTS, ...current, tdee, tdeeWeight: Math.round(weight * 10) / 10, kcalPerLb, deficit });
 }

@@ -51,6 +51,7 @@
         </div>
         <div class="totals" id="n-totals"></div>
         <p class="targets-note" id="n-targets-note" hidden></p>
+        <button class="btn setup-btn" type="button" id="n-setup-btn" hidden>Set up your targets</button>
         <ul class="entries" id="meals"></ul>
         <p class="empty" id="meals-empty">No meals logged for this day.</p>
         <div class="actions">
@@ -164,7 +165,8 @@
         <div class="card-head setting">
           <div>
             <h2 id="targets-title">Eating targets</h2>
-            <p class="label" id="targets-summary">Not set yet</p>
+            <p class="label" id="targets-summary">Not set up yet</p>
+            <p class="targets-default-note" id="targets-default-note" hidden>Your TDEE is still the app's built-in starting number, not one worked out for you. Use Edit → Recalculate from my stats.</p>
           </div>
           <button class="btn" type="button" id="targets-btn">Edit</button>
         </div>
@@ -230,11 +232,48 @@
         <label>Fiber floor (g) <input type="number" id="tg-fiberFloor" inputmode="numeric" step="1"></label>
         <label>Sodium limit (mg) <input type="number" id="tg-sodiumLimit" inputmode="numeric" step="50"></label>
       </div>
+      <button class="link" type="button" id="tg-recalc">Recalculate TDEE from my stats</button>
       <p class="target-preview" id="tg-preview" aria-live="polite"></p>
       <p class="error" id="targets-error" role="alert" hidden></p>
       <div class="actions">
         <button class="btn primary" type="submit">Save targets</button>
         <button class="btn" type="button" id="tg-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="setup-dialog">
+    <form id="setup-form" novalidate>
+      <h2 id="setup-title">Set up your targets</h2>
+      <p class="dialog-help">Your stats give a starting estimate of what you burn a day (TDEE), using the Mifflin-St Jeor formula most calculators use. It's a starting guess: after about 4 weeks of logging meals and weigh-ins, the Trends tab measures your real maintenance and offers to update it.</p>
+      <div class="fields">
+        <label>Sex (the formula differs)
+          <select id="su-sex">
+            <option value="">Choose…</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+        <label>Age <input type="number" id="su-age" inputmode="numeric" step="1" min="18" max="100"></label>
+        <label>Height (ft) <input type="number" id="su-ft" inputmode="numeric" step="1" min="4" max="7"></label>
+        <label>Height (in) <input type="number" id="su-in" inputmode="decimal" step="0.5" min="0" max="11.5"></label>
+      </div>
+      <label>Activity level
+        <select id="su-activity">
+          <option value="">Choose…</option>
+          <!-- filled from ACTIVITY_LEVELS in targets.js -->
+        </select>
+      </label>
+      <div class="fields">
+        <label>Weight (lb) <input type="number" id="su-weight" inputmode="decimal" step="0.1"></label>
+        <label>Daily deficit (kcal) <input type="number" id="su-deficit" inputmode="numeric" step="50" min="0"></label>
+      </div>
+      <p class="dialog-help">Weight starts as your 7-day average. A deficit of 500 kcal a day is about 1 lb a week; 0 eats at maintenance.</p>
+      <p class="target-preview" id="su-preview" aria-live="polite"></p>
+      <p class="error" id="setup-error" role="alert" hidden></p>
+      <div class="actions">
+        <button class="btn primary" type="submit">Save targets</button>
+        <button class="btn" type="button" id="su-cancel">Cancel</button>
       </div>
     </form>
   </dialog>

@@ -1,12 +1,13 @@
 // Export and import of your data as a JSON file. No page code here except file handling.
 
 // Version 1: entries + goals. Version 2 adds meals. Version 3 adds eating targets.
-// Version 4 adds body measurements. Older files still import fine.
-const BACKUP_VERSION = 4;
+// Version 4 adds body measurements. Version 5 adds your stats (for the TDEE setup).
+// Older files still import fine.
+const BACKUP_VERSION = 5;
 
 async function exportBackup() {
-  const [entries, goals, meals, targets, measurements] = await Promise.all([
-    db.getEntries(), db.getGoals(), db.getAllMeals(), db.getMeta("targets"), db.getMeasurements()]);
+  const [entries, goals, meals, targets, measurements, profile] = await Promise.all([
+    db.getEntries(), db.getGoals(), db.getAllMeals(), db.getMeta("targets"), db.getMeasurements(), db.getMeta("profile")]);
   entries.sort((a, b) => a.date.localeCompare(b.date));
   measurements.sort((a, b) => a.date.localeCompare(b.date));
   meals.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
@@ -16,6 +17,7 @@ async function exportBackup() {
     exportedAt: new Date().toISOString(),
     goals: goals ? { startWeight: goals.startWeight, goalWeight: goals.goalWeight } : null,
     targets: targets?.value ?? null,
+    profile: profile?.value ?? null,
     entries,
     meals,
     measurements,
@@ -92,7 +94,9 @@ function parseBackup(text) {
     if (error) throw new Error(`Measurement ${i + 1}: ${error}`);
     return measurement;
   });
-  return { entries, goals, meals, targets, measurements };
+  // Version 1-4 backups have no stats. Like targets, a broken block is skipped.
+  const profile = data.profile ? validateProfile(data.profile, Number(todayISO().slice(0, 4))).profile ?? null : null;
+  return { entries, goals, meals, targets, measurements, profile };
 }
 
 // "1 set of measurements", "3 sets of measurements"
@@ -101,7 +105,7 @@ const measurementSets = (n) => `${n} ${n === 1 ? "set" : "sets"} of measurements
 // Merge a backup into the current data. Weigh-ins and measurements are matched by date, meals by id;
 // a match is replaced by the backup's version, everything else is added.
 async function importBackup(file) {
-  const { entries, goals, meals, targets, measurements } = parseBackup(await file.text());
+  const { entries, goals, meals, targets, measurements, profile } = parseBackup(await file.text());
   const existingDates = new Set((await db.getEntries()).map((e) => e.date));
   const existingMeals = new Set((await db.getAllMeals()).map((m) => m.id));
   const existingMeasured = new Set((await db.getMeasurements()).map((m) => m.date));
@@ -119,6 +123,7 @@ async function importBackup(file) {
   await db.saveMeasurements(measurements);
   if (goals && !(await db.getGoals())) await db.saveGoals(goals); // keep your current goals if you have them
   if (targets && !(await db.getMeta("targets"))) await db.saveMeta("targets", targets); // same for targets
+  if (profile && !(await db.getMeta("profile"))) await db.saveMeta("profile", profile); // and your stats
   return { count: entries.length, mealCount: meals.length, measurementCount: measurements.length, replaced };
 }
 
