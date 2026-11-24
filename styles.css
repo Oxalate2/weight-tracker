@@ -182,15 +182,16 @@ button { font: inherit; color: inherit; }
 div.row { cursor: default; }
 /* An on/off switch at the end of a settings row */
 input.toggle {
-  -webkit-appearance: none; appearance: none; flex: none; width: 46px; height: 28px; margin: 0; padding: 0;
-  border-radius: 14px; border: 0; background: var(--raised); position: relative; cursor: pointer;
+  -webkit-appearance: none; appearance: none; flex: none; box-sizing: border-box;
+  width: 40px; height: 24px; min-height: 0; min-width: 0; margin: 0; padding: 0;
+  border: 0; border-radius: 12px; background: var(--active); position: relative; cursor: pointer;
 }
 input.toggle::after {
-  content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--soft); transition: transform 0.15s;
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--muted); transition: transform 0.15s;
 }
 input.toggle:checked { background: var(--accent); }
-input.toggle:checked::after { transform: translateX(18px); background: #fff; }
+input.toggle:checked::after { transform: translateX(16px); background: #fff; }
 input.toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .row-icon { width: 32px; height: 32px; border-radius: 10px; background: var(--raised); color: #9aa8c4; display: grid; place-items: center; flex: none; }
 .row-icon .i { width: 16px; height: 16px; }
