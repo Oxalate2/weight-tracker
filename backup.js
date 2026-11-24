@@ -85,7 +85,6 @@ function parseBackup(text) {
   });
   // Version 1-2 backups have no targets. A broken targets block is skipped, not fatal:
   // it's easy to set again, unlike your weigh-ins and meals.
-  const targets = data.targets ? validateTargets(withTargetDefaults(data.targets)).settings ?? null : null;
   // Version 1-3 backups have no measurements.
   const rawMeasurements = data.measurements ?? [];
   if (!Array.isArray(rawMeasurements)) throw new Error("The measurements in that backup are unreadable.");
@@ -96,6 +95,8 @@ function parseBackup(text) {
   });
   // Version 1-4 backups have no stats. Like targets, a broken block is skipped.
   const profile = data.profile ? validateProfile(data.profile, Number(todayISO().slice(0, 4))).profile ?? null : null;
+  // Backups from before added sugar get its default limit, which depends on your stats' sex.
+  const targets = data.targets ? validateTargets(withTargetDefaults(data.targets, profile)).settings ?? null : null;
   return { entries, goals, meals, targets, measurements, profile };
 }
 

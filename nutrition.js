@@ -11,7 +11,12 @@ const NUTRIENTS = [
   { key: "fat", label: "Fat", unit: "g", max: 500, decimals: 1 },
   { key: "fiber", label: "Fiber", unit: "g", max: 200, decimals: 1 },
   { key: "sodium", label: "Sodium", unit: "mg", max: 20000, decimals: 0 },
+  { key: "addedSugar", label: "Added sugar", unit: "g", max: 500, decimals: 1 },
 ];
+
+// Added sugar is optional: only shown when you turn it on in Settings (see trackAddedSugar in
+// targets-view.js). Meals keep any amount you entered either way.
+const OPTIONAL_NUTRIENTS = ["addedSugar"];
 
 const roundTo = (n, decimals) => Math.round(n * 10 ** decimals) / 10 ** decimals;
 

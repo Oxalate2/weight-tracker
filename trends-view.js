@@ -156,10 +156,12 @@ function renderTrendChart(series, nutrient, average) {
   });
 }
 
-// ---------- Event listeners (attached once, from app.js startup) ----------
-function setupTrends() {
+// One chip per nutrient you track. If the one shown is no longer tracked, go back to calories.
+function renderTrendChips() {
   const chips = $("t-nutrient");
-  for (const n of NUTRIENTS) {
+  chips.innerHTML = "";
+  const shown = shownNutrients(); // targets-view.js
+  for (const n of shown) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "chip";
@@ -167,6 +169,14 @@ function setupTrends() {
     chip.textContent = n.label;
     chips.append(chip);
   }
+  if (!shown.some((n) => n.key === trends.key)) trends.key = "calories";
+  renderTrends();
+}
+
+// ---------- Event listeners (attached once, from app.js startup) ----------
+function setupTrends() {
+  const chips = $("t-nutrient");
+  renderTrendChips();
   chips.addEventListener("click", (event) => {
     const key = event.target.closest(".chip")?.dataset.key;
     if (!key || key === trends.key) return;

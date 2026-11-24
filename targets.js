@@ -15,10 +15,13 @@ const KCAL_PER_G = { protein: 4, carbs: 4, fat: 9 };
 // it changes per lb come from your stats instead (see startingTdee below), so they aren't set here.
 // Fiber and sodium don't depend on weight: fiber aims for 30-38 g with 25 g as the floor,
 // and sodium is a daily limit (2,000 mg for now; lower it in the dialog when that's easy).
+// Added sugar is a daily limit too: the American Heart Association's 36 g for men and 25 g for
+// women (see addedSugarLimitFor). Natural sugar in fruit and milk doesn't count toward it.
 const TARGET_DEFAULTS = {
   deficit: 0, fatPerLb: 0.3, proteinLow: 0.8, proteinHigh: 1.0,
-  fiberFloor: 25, fiberLow: 30, fiberHigh: 38, sodiumLimit: 2000,
+  fiberFloor: 25, fiberLow: 30, fiberHigh: 38, sodiumLimit: 2000, addedSugarLimit: 36,
 };
+const addedSugarLimitFor = (profile) => (profile?.sex === "female" ? 25 : 36);
 
 // Before the setup from your stats existed, everyone started at this TDEE (the app's first
 // user's calculator result) with 7 kcal/lb. Settings still exactly at it, with no stats saved,
@@ -41,6 +44,7 @@ const TARGET_FIELDS = [
   { key: "fiberLow", label: "Fiber goal (low)", min: 0, max: 100, unit: "g" },
   { key: "fiberHigh", label: "Fiber goal (high)", min: 0, max: 100, unit: "g" },
   { key: "sodiumLimit", label: "Sodium limit", min: 500, max: 6000, unit: "mg" },
+  { key: "addedSugarLimit", label: "Added sugar limit", min: 0, max: 200, unit: "g" },
 ];
 
 // TDEE at `weight`: the TDEE you entered, moved by kcalPerLb for each lb you're above or
@@ -53,7 +57,7 @@ function tdeeAt(settings, weight) {
 //   "goal":  one number to hit (calories, fat). range is a small band around it (±5% / ±10%)
 //            since nobody hits a number exactly.
 //   "range": the range itself is the target (protein, carbs, fiber), shown as "144–180".
-//   "limit": a maximum to stay under, not an amount to reach (sodium).
+//   "limit": a maximum to stay under, not an amount to reach (sodium, added sugar).
 // goal is what the progress bar fills toward (the low end for a range, the limit for a limit).
 // Fiber also has a floor: the least you want. Under the range but at or above it still counts.
 // carbs' low end goes with protein's high end (more protein leaves fewer carbs) and vice versa.
@@ -72,6 +76,7 @@ function dailyTargets(settings, weight) {
     carbs: { kind: "range", goal: carbsFor(protein[1]), range: [carbsFor(protein[1]), carbsFor(protein[0])] },
     fiber: { kind: "range", goal: settings.fiberLow, range: [settings.fiberLow, settings.fiberHigh], floor: settings.fiberFloor },
     sodium: { kind: "limit", goal: settings.sodiumLimit, range: [0, settings.sodiumLimit] },
+    addedSugar: { kind: "limit", goal: settings.addedSugarLimit, range: [0, settings.addedSugarLimit] },
   };
 }
 
@@ -84,8 +89,10 @@ function targetStatus(total, target) {
   return total >= (target.floor ?? Infinity) ? "floor" : "under";
 }
 
-// Saved settings from before fiber and sodium existed: fill in the new fields' defaults.
-const withTargetDefaults = (saved) => ({ ...TARGET_DEFAULTS, ...saved });
+// Saved settings from before fiber, sodium or added sugar existed: fill in the new fields'
+// defaults. The added sugar limit depends on your stats' sex, when you've entered them.
+const withTargetDefaults = (saved, profile) =>
+  ({ ...TARGET_DEFAULTS, addedSugarLimit: addedSugarLimitFor(profile), ...saved });
 
 // Turns raw settings (dialog strings or backup numbers) into clean settings, or explains
 // what's wrong. Returns { settings } or { error }.
@@ -124,7 +131,7 @@ function compareMaintenance(settings, est) {
 }
 
 // Your settings with the measured maintenance as your TDEE, at the weight it was measured at.
-// Everything else (deficit, protein, fat, fiber, sodium) stays as you set it.
+// Everything else (deficit, protein, fat, fiber, sodium, added sugar) stays as you set it.
 // Returns { settings } or { error }, through the same checks as the targets dialog.
 function calibratedTargets(settings, est) {
   return validateTargets({ ...settings, tdee: est.maintenance, tdeeWeight: Math.round(est.avgWeight * 10) / 10 });
@@ -195,5 +202,5 @@ function startingTdee(profile, weight, year) {
 // (or the defaults the first time). Returns { settings } or { error }, via validateTargets.
 function targetsFromProfile(profile, weight, deficit, current, year) {
   const { tdee, kcalPerLb } = startingTdee(profile, weight, year);
-  return validateTargets({ ...TARGET_DEFAULTS, ...current, tdee, tdeeWeight: Math.round(weight * 10) / 10, kcalPerLb, deficit });
+  return validateTargets({ ...withTargetDefaults(current, profile), tdee, tdeeWeight: Math.round(weight * 10) / 10, kcalPerLb, deficit });
 }
