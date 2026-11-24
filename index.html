@@ -220,11 +220,6 @@
             <span class="row-text"><span class="row-title">Eating targets</span><span class="row-sub" id="targets-summary">Not set up yet</span></span>
             <svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
           </button></li>
-          <li><label class="row">
-            <span class="row-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 9h.01M15 9h.01M12 12h.01M9 15h.01M15 15h.01"/></svg></span>
-            <span class="row-text"><span class="row-title">Track added sugar</span><span class="row-sub">A daily limit, on this device only</span></span>
-            <input type="checkbox" class="toggle" id="sugar-toggle">
-          </label></li>
         </ul>
       </section>
       <p class="due" id="targets-default-note" hidden>Your TDEE is still the app's built-in starting number, not one worked out for you. Open Your stats to work it out.</p>
@@ -290,7 +285,7 @@
         <label>Fiber goal high (g) <input type="number" id="tg-fiberHigh" inputmode="numeric" step="1"></label>
         <label>Fiber floor (g) <input type="number" id="tg-fiberFloor" inputmode="numeric" step="1"></label>
         <label>Sodium limit (mg) <input type="number" id="tg-sodiumLimit" inputmode="numeric" step="50"></label>
-        <label data-sugar>Added sugar limit (g) <input type="number" id="tg-addedSugarLimit" inputmode="numeric" step="1"></label>
+        <label>Added sugar limit (g) <input type="number" id="tg-addedSugarLimit" inputmode="numeric" step="1"></label>
       </div>
       <button class="link" type="button" id="tg-recalc">Recalculate TDEE from my stats</button>
       <p class="target-preview" id="tg-preview" aria-live="polite"></p>
@@ -373,7 +368,7 @@
         <label>Fat (g) <input type="number" id="m-fat" inputmode="decimal" min="0" step="0.1"></label>
         <label>Fiber (g) <input type="number" id="m-fiber" inputmode="decimal" min="0" step="0.1"></label>
         <label>Sodium (mg) <input type="number" id="m-sodium" inputmode="numeric" min="0"></label>
-        <label data-sugar>Added sugar (g) <input type="number" id="m-addedSugar" inputmode="decimal" min="0" step="0.1"></label>
+        <label>Added sugar (g) <input type="number" id="m-addedSugar" inputmode="decimal" min="0" step="0.1"></label>
       </div>
       <label>Notes (optional) <input type="text" id="m-notes" maxlength="200"></label>
       <p class="error" id="meal-error" role="alert" hidden></p>

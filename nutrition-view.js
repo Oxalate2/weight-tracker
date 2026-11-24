@@ -55,15 +55,14 @@ function dayTargets() {
   return t;
 }
 
-// The calorie ring, protein/carbs/fat beside it, and fiber, sodium and (if you track it) added
-// sugar in their own tile.
+// The calorie ring, protein/carbs/fat beside it, and fiber, sodium and added sugar in their own tile.
 function renderTotals(totals, targets) {
   renderCalorieRing(totals, targets);
   const macros = $("n-macros");
   const extras = $("n-extras");
   macros.innerHTML = "";
   extras.innerHTML = "";
-  for (const n of shownNutrients()) {
+  for (const n of NUTRIENTS) {
     if (n.key === "calories") continue;
     const mini = !["protein", "carbs", "fat"].includes(n.key); // the small tile puts the target on its own line
     (mini ? extras : macros).append(nutrientBar(n, totals, targets?.[n.key], mini));

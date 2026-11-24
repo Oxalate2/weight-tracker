@@ -5,17 +5,11 @@
 
 let targetSettings = null; // your saved settings, or null until you set up your targets
 let targetProfile = null; // your stats (sex, birth year, height, activity), or null if never entered
-let trackAddedSugar = false; // Settings switch, saved on this device; off unless you turn it on
-
-// The nutrients to show: all of them, minus added sugar when you don't track it.
-const shownNutrients = () => NUTRIENTS.filter((n) => trackAddedSugar || !OPTIONAL_NUTRIENTS.includes(n.key));
 
 // ---------- Loading ----------
 // Read your saved settings and stats. Run at startup and after a backup import.
 async function loadTargets() {
-  const [saved, profile, sugar] = await Promise.all([db.getMeta("targets"), db.getMeta("profile"), db.getMeta("trackAddedSugar")]);
-  trackAddedSugar = sugar?.value === true;
-  applySugarSetting();
+  const [saved, profile] = await Promise.all([db.getMeta("targets"), db.getMeta("profile")]);
   targetProfile = profile ? validateProfile(profile.value, thisYear()).profile ?? null : null;
   targetSettings = saved ? withTargetDefaults(saved.value, targetProfile) : null;
   ensureTargets();
@@ -74,22 +68,6 @@ function renderTargetsSummary() {
   ].filter(Boolean).join(" · ");
 }
 
-// ---------- Tracking added sugar (optional) ----------
-// Show or hide added sugar's form fields and its Trends chip, and set the switch.
-function applySugarSetting() {
-  $("sugar-toggle").checked = trackAddedSugar;
-  document.querySelectorAll("[data-sugar]").forEach((el) => { el.hidden = !trackAddedSugar; });
-  $("n-extras").closest("section").setAttribute("aria-label", trackAddedSugar ? "Fiber, sodium and added sugar" : "Fiber and sodium");
-  renderTrendChips(); // trends-view.js
-}
-
-async function setTrackAddedSugar(on) {
-  trackAddedSugar = on;
-  await db.saveMeta("trackAddedSugar", on);
-  applySugarSetting();
-  renderNutrition();
-}
-
 // ---------- Targets dialog ----------
 function readTargetsForm() {
   const raw = {};
@@ -113,7 +91,7 @@ function renderTargetsPreview() {
   preview.textContent = `Today, at ${weight.toFixed(1)} lb: ${targetAmount(t.calories)} kcal · ` +
     `fat ${targetAmount(t.fat)} g · protein ${targetAmount(t.protein)} g · carbs ${targetAmount(t.carbs)} g · ` +
     `fiber ${targetAmount(t.fiber)} g (floor ${t.fiber.floor}) · sodium under ${targetAmount(t.sodium)} mg` +
-    (trackAddedSugar ? ` · added sugar under ${targetAmount(t.addedSugar)} g` : "");
+    ` · added sugar under ${targetAmount(t.addedSugar)} g`;
 }
 
 // With no targets yet, Edit opens the setup from your stats instead.
@@ -175,7 +153,6 @@ function renderSetupPreview() {
 // ---------- Event listeners (attached once, from app.js startup) ----------
 function setupTargets() {
   $("targets-btn").addEventListener("click", openTargetsDialog);
-  $("sugar-toggle").addEventListener("change", (event) => setTrackAddedSugar(event.target.checked));
   for (const a of ACTIVITY_LEVELS) $("su-activity").add(new Option(a.label, a.key));
   $("n-setup-btn").addEventListener("click", openSetupDialog);
   $("stats-btn").addEventListener("click", openSetupDialog);
